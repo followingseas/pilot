@@ -2,6 +2,14 @@ import { execFileSync } from 'node:child_process'
 
 export const isGitUrl = (s: string): boolean => /^(https?:\/\/|git@|ssh:\/\/)/.test(s)
 
+// https://user:token@host 형태의 자격증명 포함 URL을 감지한다.
+// 관례적인 ssh://git@host, scheme://git@host (예: https://git@host — GitHub App 토큰 관례)는 허용한다.
+export const hasEmbeddedCredentials = (url: string): boolean =>
+  /^[a-z+]+:\/\/[^@/\s]+@/i.test(url) && !/^ssh:\/\/git@/i.test(url) && !/^[a-z+]+:\/\/git@/i.test(url)
+
+// 에러 메시지·표시 문자열에 git URL의 자격증명(예: https://user:token@host)이 노출되지 않도록 마스킹
+export const redactCredentials = (text: string): string => text.replace(/\/\/[^@/\s]+@/g, '//***@')
+
 export function normalizeRemoteUrl(url: string): string {
   let s = url.trim()
   const scp = s.match(/^(?:ssh:\/\/)?(?:[\w.-]+@)?([\w.-]+)[:/](.+)$/)

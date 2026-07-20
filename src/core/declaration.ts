@@ -22,7 +22,9 @@ export function declarationStatus(decl: Declaration, config: PilotConfig): 'conn
 }
 export function approveDeclaration(decl: Declaration, config: PilotConfig): PilotConfig {
   const key = declKey(decl)
-  let id = basename(key)
+  let id = basename(key).toLowerCase().replace(/[^a-z0-9-_]/g, '-').replace(/^[-_]+/, '')
+  if (!id) id = 'source'
+  id = id.slice(0, 64)
   while (config.connections.some(c => c.id === id)) id = `${id}-2`
   return {
     ...config,

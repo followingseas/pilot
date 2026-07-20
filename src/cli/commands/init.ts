@@ -2,7 +2,7 @@ import type { Command } from 'commander'
 import confirm from '@inquirer/confirm'
 import { loadConfig, saveConfig } from '../../core/config.js'
 import { readDeclaration, writeDeclaration, declarationStatus, approveDeclaration } from '../../core/declaration.js'
-import { detectProject } from '../../core/git.js'
+import { detectProject, hasEmbeddedCredentials } from '../../core/git.js'
 import { cloneSource, loadSource } from '../../core/source.js'
 import { writeStub } from '../../core/stub.js'
 import { loadAll } from '../load.js'
@@ -32,6 +32,9 @@ export function registerInit(program: Command): void {
       // (sources 배열의 순서는 합성 강도순이 아닐 수 있어 sources[0]만으로는 의도한 소스가 아닐 수 있다)
       let connectedId: string | null = null
       if (declarationStatus(decl, config) === 'needs-approval') {
+        if (hasEmbeddedCredentials(decl.source)) {
+          throw new PilotError('URL에 자격증명을 포함할 수 없습니다', 'git credential helper 또는 SSH 키를 사용하세요')
+        }
         const ok = opts.yes || await confirm({ message: `'${decl.source}' rutter를 연결할까요?` })
         if (!ok) throw new PilotError('연결이 승인되지 않았습니다')
         config = approveDeclaration(decl, config)

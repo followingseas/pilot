@@ -24,4 +24,9 @@ describe('declaration', () => {
     expect(approved.connections[0]?.id).toBe('handbook')
     expect(approved.connections[0]?.kind).toBe('git')
   })
+  it('파생 id를 source cache dir 문자셋에 맞게 정규화한다', () => {
+    const decl = { source: 'https://github.com/acme/config.v2.git' }
+    const approved = approveDeclaration(decl, baseConfig)
+    expect(approved.connections[0]?.id).toBe('config-v2')
+  })
 })

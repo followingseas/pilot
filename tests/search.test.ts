@@ -8,7 +8,7 @@ const synthesis: SynthesisResult = {
     { key: 'conventions/commit.md', sourceId: 'org', scope: 'organization', filePath: '/x/commit.md',
       content: '# 커밋 컨벤션\nConventional Commits를 따른다. BREAKING CHANGE는 대문자.', shadows: [] },
     { key: 'charts/projects.md', sourceId: 'org', scope: 'organization', filePath: '/x/projects.md',
-      content: '# 프로젝트 지도\nwake는 세션 뷰어다.', shadows: [] }
+      content: '# 프로젝트 지도\ncompass는 예제 도구다.', shadows: [] }
   ]
 }
 

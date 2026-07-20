@@ -1,6 +1,7 @@
 import type { Command } from 'commander'
 import { loadConfig } from '../../core/config.js'
 import { lastSyncAt } from '../../core/sync.js'
+import { redactCredentials } from '../../core/git.js'
 
 function relativeTime(ms: number | null): string {
   if (ms === null) return '동기화 기록 없음'
@@ -19,7 +20,7 @@ export function registerStatus(program: Command): void {
     .action((opts: { json?: boolean }) => {
       const config = loadConfig()
       const rows = config.connections.map(c => ({
-        id: c.id, kind: c.kind, location: c.location, priority: c.priority,
+        id: c.id, kind: c.kind, location: redactCredentials(c.location), priority: c.priority,
         lastSyncAt: c.kind === 'git' ? lastSyncAt(c.id) : null
       }))
       if (opts.json) { console.log(JSON.stringify(rows, null, 2)); return }

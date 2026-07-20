@@ -5,14 +5,12 @@ import type { Connection } from './config.js'
 import { parseManifest, type RutterManifest } from './manifest.js'
 import { sourceCacheDir } from './paths.js'
 import { PilotError } from './errors.js'
+import { redactCredentials } from './git.js'
 
 export interface RutterSource {
   id: string; kind: 'local' | 'git' | 'project'
   rootDir: string; manifest: RutterManifest; priority: number
 }
-
-// 에러 메시지에 git 명령 전체(자격증명 포함 URL)가 노출되지 않도록 마스킹
-const redactCredentials = (text: string): string => text.replace(/\/\/[^@/\s]+@/g, '//***@')
 
 export function loadSource(conn: Connection): RutterSource {
   const rootDir = conn.kind === 'local' ? conn.location : sourceCacheDir(conn.id)

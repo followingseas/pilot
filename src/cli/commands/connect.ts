@@ -3,7 +3,7 @@ import type { Command } from 'commander'
 import { loadConfig, saveConfig, type Connection } from '../../core/config.js'
 import { loadSource, cloneSource } from '../../core/source.js'
 import { PilotError } from '../../core/errors.js'
-import { isGitUrl } from '../../core/git.js'
+import { isGitUrl, hasEmbeddedCredentials, redactCredentials } from '../../core/git.js'
 
 export function registerConnect(program: Command): void {
   program.command('connect')
@@ -13,6 +13,9 @@ export function registerConnect(program: Command): void {
     .option('--json', 'JSON 출력')
     .action((location: string, opts: { id: string; priority?: string; json?: boolean }) => {
       const kind: Connection['kind'] = isGitUrl(location) ? 'git' : 'local'
+      if (kind === 'git' && hasEmbeddedCredentials(location)) {
+        throw new PilotError('URL에 자격증명을 포함할 수 없습니다', 'git credential helper 또는 SSH 키를 사용하세요')
+      }
       const conn: Connection = {
         id: opts.id, kind, location: kind === 'local' ? resolve(location) : location
       }
@@ -28,7 +31,7 @@ export function registerConnect(program: Command): void {
       config.connections = [...config.connections.filter(c => c.id !== conn.id), conn]
       saveConfig(config)
 
-      if (opts.json) { console.log(JSON.stringify(conn, null, 2)); return }
-      console.log(`연결됨: ${conn.id} (${conn.kind}) → ${conn.location}`)
+      if (opts.json) { console.log(JSON.stringify({ ...conn, location: redactCredentials(conn.location) }, null, 2)); return }
+      console.log(`연결됨: ${conn.id} (${conn.kind}) → ${redactCredentials(conn.location)}`)
     })
 }

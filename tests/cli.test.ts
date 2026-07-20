@@ -36,4 +36,16 @@ describe('pilot CLI', () => {
     const out = JSON.parse(run(['search', 'BREAKING', '--json']))
     expect(out[0].key).toBe('commit.md')
   })
+  it('connect가 자격증명 포함 URL을 거부하고 config에 저장하지 않는다', () => {
+    let stderr = ''
+    try {
+      run(['connect', 'https://user:sekrit@example.invalid/repo.git', '--id', 'leaky'])
+    } catch (e) {
+      stderr = (e as { stderr: string }).stderr
+    }
+    expect(stderr).toContain('자격증명')
+    expect(stderr).not.toContain('sekrit')
+    const status = JSON.parse(run(['status', '--json']))
+    expect(status).toHaveLength(0)
+  })
 })
