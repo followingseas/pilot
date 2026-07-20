@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { loadAll } from '../cli/load.js'
 import { searchDocs } from '../core/search.js'
 import { lastSyncAt } from '../core/sync.js'
+import { ConflictError } from '../core/errors.js'
 
 const asText = (data: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] })
 
@@ -30,11 +31,18 @@ export function createServer(): McpServer {
 
   server.tool('pilot_doctor', '소스 상태 진단', {},
     () => {
-      const { config, sources, synthesis } = loadAll(process.cwd())
-      return asText({
-        connections: config.connections.length, loaded: sources.length,
-        shadowWarnings: synthesis.warnings
-      })
+      try {
+        const { config, sources, synthesis } = loadAll(process.cwd())
+        return asText({
+          connections: config.connections.length, loaded: sources.length,
+          warnings: synthesis.warnings
+        })
+      } catch (e) {
+        if (e instanceof ConflictError) {
+          return asText({ connections: null, loaded: null, warnings: [], conflict: e.message })
+        }
+        throw e
+      }
     })
 
   return server
