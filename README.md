@@ -43,7 +43,7 @@ cd my-project                                              # 대상 프로젝트
 pilot init --source https://github.com/acme/rutter.git --yes
 ```
 
-`.rutter.yaml`(source 선언)과 `.pilot/context.md`(합성 컨텍스트), `CLAUDE.md`/`AGENTS.md`(참조 블록)가 생성된다.
+`.rutter.yaml`(source 선언), `.pilot/context.md`(합성 컨텍스트), `CLAUDE.md`(참조 블록), `AGENTS.md`(합성 전문 삽입 — import를 지원하지 않는 에이전트용)가 생성된다.
 
 ```bash
 pilot context            # 현재 프로젝트에 적용되는 항목과 provenance 확인
@@ -73,12 +73,12 @@ pilot search "커밋 메시지"  # 합성된 문서 전문 검색
 | `pilot connect <location> --id <id> [--priority <n>]` | rutter source를 전역 설정에 직접 연결 (로컬 경로 또는 git URL) |
 | `pilot sync [id]` | git source를 최신 커밋으로 갱신 (생략 시 전체 git source) |
 | `pilot status` | 연결된 source 목록과 마지막 동기화 시각 |
-| `pilot doctor` | source 로드 실패, 캐시 TTL 초과, 섀도잉 경고, 충돌, 스텁 누락을 진단 |
+| `pilot doctor [--cwd <path>] [--json]` | source 로드 실패, 캐시 TTL 초과, 섀도잉 경고, 충돌, 스텁 누락을 진단 |
 | `pilot context [--cwd <path>] [--json]` | 현재 프로젝트에 적용되는 합성 결과와 provenance 출력 |
 | `pilot search <query> [--limit <n>] [--json]` | 합성된 문서 전문 검색 |
 | `pilot mcp` | stdio MCP 서버 실행 |
 
-모든 조회 명령은 `--json` 옵션으로 기계 판독 가능한 출력을 지원한다.
+connect·sync·status·doctor·context·search 명령은 `--json` 옵션을 지원한다.
 
 ## MCP 도구
 
