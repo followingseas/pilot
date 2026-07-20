@@ -26,6 +26,17 @@ describe('upsertMarkedBlock', () => {
     const once = upsertMarkedBlock('x', 'B')
     expect(upsertMarkedBlock(once, 'B')).toBe(once)
   })
+  it('block에 $\'가 포함돼도 replacement 패턴으로 오염되지 않는다', () => {
+    const before = `앞내용\n${BEGIN_MARK}\n낡은거\n${END_MARK}\n뒤내용`
+    const block = `블록 안 $' 텍스트`
+    const out = upsertMarkedBlock(before, block)
+    expect(out).toContain(`${BEGIN_MARK}\n블록 안 $' 텍스트\n${END_MARK}`)
+    expect(out).toBe(`앞내용\n${BEGIN_MARK}\n블록 안 $' 텍스트\n${END_MARK}\n뒤내용`)
+  })
+  it('새 파일(빈 문자열)에 upsert하면 결과가 BEGIN_MARK로 시작한다', () => {
+    const out = upsertMarkedBlock('', 'BLOCK')
+    expect(out.startsWith(BEGIN_MARK)).toBe(true)
+  })
 })
 
 describe('writeStub', () => {
@@ -39,5 +50,11 @@ describe('writeStub', () => {
     expect(claude).toContain('@.pilot/context.md')
     expect(existsSync(join(root, '.pilot/context.md'))).toBe(true)
     expect(readFileSync(join(root, '.pilot/.gitignore'), 'utf8')).toBe('*\n')
+  })
+  it('AGENTS.md에 합성 컨텍스트 전문(픽스처 content)이 포함된다', () => {
+    const root = mkdtempSync(join(tmpdir(), 'pilot-stub-'))
+    writeStub(root, synthesis, 'Acme Handbook')
+    const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8')
+    expect(agents).toContain('# 커밋')
   })
 })

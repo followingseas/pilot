@@ -5,11 +5,14 @@ import type { SynthesisResult } from './synthesize.js'
 export const BEGIN_MARK = '<!-- pilot:begin -->'
 export const END_MARK = '<!-- pilot:end -->'
 
+const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 export function upsertMarkedBlock(existing: string, block: string): string {
   const rendered = `${BEGIN_MARK}\n${block}\n${END_MARK}`
-  const re = new RegExp(`${BEGIN_MARK}[\\s\\S]*?${END_MARK}`)
-  if (re.test(existing)) return existing.replace(re, rendered)
-  const sep = existing.endsWith('\n') || existing === '' ? '' : '\n'
+  const re = new RegExp(`${escapeRegExp(BEGIN_MARK)}[\\s\\S]*?${escapeRegExp(END_MARK)}`)
+  if (re.test(existing)) return existing.replace(re, () => rendered)
+  if (existing === '') return `${rendered}\n`
+  const sep = existing.endsWith('\n') ? '' : '\n'
   return `${existing}${sep}\n${rendered}\n`
 }
 
@@ -36,8 +39,10 @@ export function writeStub(
     `상세 규약·검색은 MCP 도구 pilot_get_context / pilot_search_knowledge 사용.`
   ].join('\n')
   const agentsBlock = [
-    `이 프로젝트는 ${rutterName}의 규약을 따른다.`,
-    `작업 시작 전 MCP 도구 pilot_get_context를 호출해 적용 규약을 로드하라.`
+    `이 프로젝트는 ${rutterName}의 규약을 따른다. 아래는 합성된 규약 전문이다.`,
+    `상세 검색은 MCP 도구 pilot_search_knowledge 사용.`,
+    '',
+    renderContextFile(synthesis, rutterName)
   ].join('\n')
 
   for (const [file, block] of [['CLAUDE.md', claudeBlock], ['AGENTS.md', agentsBlock]] as const) {
