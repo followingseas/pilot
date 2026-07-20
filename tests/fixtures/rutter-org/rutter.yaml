@@ -1,0 +1,9 @@
+version: 1
+name: Acme Engineering Handbook
+scope: organization
+paths:
+  conventions: conventions
+  charts: charts
+repositories:
+  - id: payment-api
+    remote: git@github.com:acme/payment-api.git
