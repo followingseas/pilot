@@ -67,4 +67,18 @@ describe('pilot init', () => {
       expect(config.connections ?? []).toHaveLength(0)
     }
   })
+  it('자격증명이 포함된 --source는 .rutter.yaml 기록 전에 거부된다', () => {
+    const proj = makeProject()
+    let stderr = ''
+    let threw = false
+    try {
+      run(['init', '--source', 'https://user:sekrit@example.invalid/repo.git', '--yes'], proj)
+    } catch (e) {
+      threw = true
+      stderr = (e as { stderr?: string }).stderr ?? ''
+    }
+    expect(threw).toBe(true)
+    expect(existsSync(join(proj, '.rutter.yaml'))).toBe(false)
+    expect(stderr).not.toContain('sekrit')
+  })
 })
