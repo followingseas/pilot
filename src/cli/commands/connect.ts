@@ -3,8 +3,7 @@ import type { Command } from 'commander'
 import { loadConfig, saveConfig, type Connection } from '../../core/config.js'
 import { loadSource, cloneSource } from '../../core/source.js'
 import { PilotError } from '../../core/errors.js'
-
-const isGitUrl = (s: string) => /^(https?:\/\/|git@|ssh:\/\/)/.test(s)
+import { isGitUrl } from '../../core/git.js'
 
 export function registerConnect(program: Command): void {
   program.command('connect')

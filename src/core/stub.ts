@@ -5,6 +5,8 @@ import type { SynthesisResult } from './synthesize.js'
 export const BEGIN_MARK = '<!-- pilot:begin -->'
 export const END_MARK = '<!-- pilot:end -->'
 
+export const pilotContextPath = (projectRoot: string): string => join(projectRoot, '.pilot', 'context.md')
+
 const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 const sanitizeBlock = (b: string): string =>
@@ -35,7 +37,7 @@ export function writeStub(
   const pilotDir = join(projectRoot, '.pilot')
   mkdirSync(pilotDir, { recursive: true })
   writeFileSync(join(pilotDir, '.gitignore'), '*\n')
-  writeFileSync(join(pilotDir, 'context.md'), renderContextFile(synthesis, rutterName))
+  writeFileSync(pilotContextPath(projectRoot), renderContextFile(synthesis, rutterName))
   written.push('.pilot/context.md')
 
   const claudeBlock = [

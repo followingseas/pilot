@@ -1,5 +1,7 @@
 import { execFileSync } from 'node:child_process'
 
+export const isGitUrl = (s: string): boolean => /^(https?:\/\/|git@|ssh:\/\/)/.test(s)
+
 export function normalizeRemoteUrl(url: string): string {
   let s = url.trim()
   const scp = s.match(/^(?:ssh:\/\/)?(?:[\w.-]+@)?([\w.-]+)[:/](.+)$/)

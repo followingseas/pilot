@@ -1,11 +1,12 @@
 import { existsSync } from 'node:fs'
-import { join } from 'node:path'
 import type { Command } from 'commander'
 import { loadConfig } from '../../core/config.js'
 import { loadSource, loadProjectSource, type RutterSource } from '../../core/source.js'
 import { identifyProject } from '../../core/identify.js'
 import { synthesize } from '../../core/synthesize.js'
 import { lastSyncAt, shouldRevalidate } from '../../core/sync.js'
+import { ConflictError } from '../../core/errors.js'
+import { pilotContextPath } from '../../core/stub.js'
 
 interface DoctorIssue { level: 'error' | 'warning'; message: string }
 
@@ -37,11 +38,20 @@ export function registerDoctor(program: Command): void {
       }
 
       // ③ synthesis.warnings (섀도잉 등)
-      const synthesis = synthesize(sources, project)
-      for (const w of synthesis.warnings) issues.push({ level: 'warning', message: w })
+      let synthesis = null
+      try {
+        synthesis = synthesize(sources, project)
+        for (const w of synthesis.warnings) issues.push({ level: 'warning', message: w })
+      } catch (e) {
+        if (e instanceof ConflictError) {
+          issues.push({ level: 'error', message: `충돌: ${(e as Error).message}` })
+        } else {
+          throw e
+        }
+      }
 
       // ④ 프로젝트 스텁 존재 여부
-      if (project && !existsSync(join(project.root, '.pilot', 'context.md'))) {
+      if (project && !existsSync(pilotContextPath(project.root))) {
         issues.push({ level: 'warning', message: '프로젝트 스텁(.pilot/context.md)이 없습니다 — pilot init 을 실행하세요' })
       }
 

@@ -2,13 +2,11 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { join, resolve, basename } from 'node:path'
 import { parse, stringify } from 'yaml'
 import { z } from 'zod'
-import { normalizeRemoteUrl } from './git.js'
+import { normalizeRemoteUrl, isGitUrl } from './git.js'
 import type { PilotConfig } from './config.js'
 
 const schema = z.object({ source: z.string().min(1) })
 export type Declaration = z.infer<typeof schema>
-
-const isGitUrl = (s: string) => /^(https?:\/\/|git@|ssh:\/\/)/.test(s)
 const declKey = (d: Declaration) => isGitUrl(d.source) ? normalizeRemoteUrl(d.source) : resolve(d.source)
 
 export function readDeclaration(projectRoot: string): Declaration | null {
