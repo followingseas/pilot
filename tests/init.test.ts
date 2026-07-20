@@ -42,4 +42,29 @@ describe('pilot init', () => {
     run(['init', '--yes'], proj)
     expect(readFileSync(join(proj, 'CLAUDE.md'), 'utf8')).toContain('Acme Handbook')
   })
+  it('승인 프롬프트를 거부하면 연결도, CLAUDE.md 생성도 일어나지 않는다', () => {
+    const rutter = makeRutter(); const proj = makeProject()
+    writeFileSync(join(proj, '.rutter.yaml'), `source: ${rutter}\n`)
+
+    // @inquirer/confirm은 비TTY 입력에서 'No'로 정상 처리되어 PilotError로 깔끔히
+    // 실패(throw)하거나, ExitPromptError로 비정상 종료할 수 있다 — 둘 중 어느
+    // 경로를 타는지는 타이밍에 좌우되므로 강제하지 않는다. 대신 "연결이 일어나지
+    // 않았다"는 보안 불변식(성공 로그 없음 + CLAUDE.md 없음 + config 비어있음)만 검증한다.
+    let stdout = ''
+    try {
+      stdout = execFileSync('npx', ['tsx', join(process.cwd(), 'src/cli/index.ts'), 'init'],
+        { encoding: 'utf8', env, cwd: proj, input: 'n\n' })
+    } catch {
+      // 실패 자체가 기대되는 경로 — 아래 불변식만 확인한다
+    }
+
+    expect(stdout).not.toContain('연결됨')
+    expect(existsSync(join(proj, 'CLAUDE.md'))).toBe(false)
+
+    const configPath = join(env.XDG_CONFIG_HOME!, 'pilot', 'config.json')
+    if (existsSync(configPath)) {
+      const config = JSON.parse(readFileSync(configPath, 'utf8'))
+      expect(config.connections ?? []).toHaveLength(0)
+    }
+  })
 })

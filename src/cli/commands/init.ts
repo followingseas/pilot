@@ -3,7 +3,7 @@ import confirm from '@inquirer/confirm'
 import { loadConfig, saveConfig } from '../../core/config.js'
 import { readDeclaration, writeDeclaration, declarationStatus, approveDeclaration } from '../../core/declaration.js'
 import { detectProject } from '../../core/git.js'
-import { cloneSource } from '../../core/source.js'
+import { cloneSource, loadSource } from '../../core/source.js'
 import { writeStub } from '../../core/stub.js'
 import { loadAll } from '../load.js'
 import { PilotError } from '../../core/errors.js'
@@ -18,7 +18,11 @@ export function registerInit(program: Command): void {
 
       let config = loadConfig()
       let decl = readDeclaration(detected.root)
-      if (!decl) {
+      if (decl) {
+        if (opts.source && opts.source !== decl.source) {
+          console.error(`경고: .rutter.yaml이 이미 '${decl.source}'을 선언하고 있어 --source를 무시합니다`)
+        }
+      } else {
         if (!opts.source) throw new PilotError('.rutter.yaml이 없습니다', 'pilot init --source <url|path> 로 시작하세요')
         writeDeclaration(detected.root, opts.source)
         decl = { source: opts.source }
@@ -33,6 +37,7 @@ export function registerInit(program: Command): void {
         config = approveDeclaration(decl, config)
         const conn = config.connections[config.connections.length - 1]!
         if (conn.kind === 'git') cloneSource(conn)
+        loadSource(conn) // manifest 파싱 확인 — 실패하면 여기서 throw되어 config에 저장되지 않는다
         saveConfig(config)
         connectedId = conn.id
         console.log(`✓ '${conn.id}' 연결됨`)
