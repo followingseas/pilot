@@ -7,7 +7,7 @@ import { ManifestError } from './errors.js'
 export const SCOPES = ['organization', 'repository', 'project-local', 'personal'] as const
 export type Scope = (typeof SCOPES)[number]
 
-const schema = z.object({
+const schema = z.looseObject({
   version: z.literal(1),
   name: z.string().min(1),
   scope: z.enum(SCOPES),
@@ -18,7 +18,7 @@ const schema = z.object({
   }).default({}),
   repositories: z.array(z.object({ id: z.string(), remote: z.string() })).default([]),
   priority: z.number().int().default(0)
-}).passthrough() // team, depends_on 등 예약 키 허용(무시)
+}) // team, depends_on 등 예약 키 허용(무시)
 
 export type RutterManifest = z.infer<typeof schema>
 export type RepoEntry = RutterManifest['repositories'][number]

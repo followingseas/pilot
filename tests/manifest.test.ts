@@ -23,4 +23,11 @@ describe('parseManifest', () => {
     writeFileSync(join(dir, 'rutter.yaml'), 'version: 1\nname: X\nscope: galaxy\n')
     expect(() => parseManifest(dir)).toThrow(/scope/)
   })
+  it('예약 키(team, depends_on)를 허용하고 파싱에 성공한다', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'pilot-'))
+    writeFileSync(join(dir, 'rutter.yaml'),
+      'version: 1\nname: X\nscope: organization\nteam: platform\ndepends_on:\n  - other\n')
+    const m = parseManifest(dir)
+    expect(m.name).toBe('X')
+  })
 })
