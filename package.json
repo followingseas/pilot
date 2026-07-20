@@ -1,0 +1,47 @@
+{
+  "name": "@followingseas/pilot",
+  "version": "0.1.0",
+  "description": "Pilot connects your rutter — org knowledge bundles — to AI coding agents via CLI and MCP.",
+  "type": "module",
+  "bin": {
+    "pilot": "./dist/cli/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "dev": "tsx src/cli/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/followingseas/pilot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/followingseas/pilot/issues"
+  },
+  "homepage": "https://github.com/followingseas/pilot#readme",
+  "dependencies": {
+    "@inquirer/confirm": "^6.1.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "commander": "^15.0.0",
+    "minisearch": "^7.2.0",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}
