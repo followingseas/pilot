@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { spawn } from 'node:child_process'
 import type { PilotConfig } from './config.js'
@@ -9,7 +9,9 @@ const stampFile = (id: string) => join(sourceCacheDir(id), '.pilot-synced-at')
 
 export function lastSyncAt(id: string): number | null {
   const f = stampFile(id)
-  return existsSync(f) ? Number(readFileSync(f, 'utf8')) : null
+  if (!existsSync(f)) return null
+  const n = Number(readFileSync(f, 'utf8'))
+  return Number.isFinite(n) ? n : null
 }
 
 export function shouldRevalidate(lastMs: number | null, ttlHours: number, nowMs: number): boolean {
@@ -20,6 +22,10 @@ export function syncNow(config: PilotConfig, id?: string) {
   const targets = config.connections.filter(c => c.kind === 'git' && (!id || c.id === id))
   const synced: string[] = []
   const failed: { id: string; error: string }[] = []
+  if (id && targets.length === 0) {
+    failed.push({ id, error: '해당 id의 git source가 없습니다' })
+    return { synced, failed }
+  }
   for (const conn of targets) {
     try {
       fetchSource(conn)
@@ -39,9 +45,16 @@ export function maybeRevalidateInBackground(config: PilotConfig): void {
   if (!stale) return
   const lock = join(cacheDir(), 'sync.lock')
   mkdirSync(cacheDir(), { recursive: true })
-  if (existsSync(lock) && Date.now() - statSync(lock).mtimeMs < 10 * 60_000) return
-  writeFileSync(lock, String(process.pid))
-  const child = spawn(process.execPath, [process.argv[1] ?? '', 'sync'], {
+  if (existsSync(lock)) {
+    if (Date.now() - statSync(lock).mtimeMs < 10 * 60_000) return
+    rmSync(lock, { force: true })
+  }
+  try { writeFileSync(lock, String(process.pid), { flag: 'wx' }) }
+  catch { return }   // 다른 프로세스가 선점
+
+  const entry = process.argv[1]
+  if (!entry) return                       // 엔트리 불명이면 spawn하지 않음
+  const child = spawn(process.execPath, [...process.execArgv, entry, 'sync'], {
     detached: true, stdio: 'ignore'
   })
   child.unref()
