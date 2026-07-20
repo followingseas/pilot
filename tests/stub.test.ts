@@ -37,7 +37,28 @@ describe('upsertMarkedBlock', () => {
     const out = upsertMarkedBlock('', 'BLOCK')
     expect(out.startsWith(BEGIN_MARK)).toBe(true)
   })
+  it('block에 END_MARK 리터럴이 포함되면 무해화되어 밖의 내용을 오염시키지 않는다', () => {
+    const before = `앞내용\n${BEGIN_MARK}\n낡은거\n${END_MARK}\n뒤내용`
+    const block = `본문 시작\n${END_MARK}\n본문 끝`
+    const out = upsertMarkedBlock(before, block)
+    const sanitized = `본문 시작\n<!-- pilot:end (escaped) -->\n본문 끝`
+    expect(out).toBe(`앞내용\n${BEGIN_MARK}\n${sanitized}\n${END_MARK}\n뒤내용`)
+    const beginCount = (out.match(new RegExp(escapeForCount(BEGIN_MARK), 'g')) ?? []).length
+    const endCount = (out.match(new RegExp(escapeForCount(END_MARK), 'g')) ?? []).length
+    expect(beginCount).toBe(1)
+    expect(endCount).toBe(1)
+  })
+  it('마커 리터럴이 포함된 block으로 재 upsert해도 결과가 동일하다 (멱등)', () => {
+    const block = `본문\n${BEGIN_MARK}\n${END_MARK}\n끝`
+    const once = upsertMarkedBlock('x', block)
+    const twice = upsertMarkedBlock(once, block)
+    expect(twice).toBe(once)
+  })
 })
+
+function escapeForCount(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
 
 describe('writeStub', () => {
   it('CLAUDE.md 기존 내용을 보존하며 블록·context.md·gitignore를 생성한다', () => {

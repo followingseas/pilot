@@ -7,8 +7,12 @@ export const END_MARK = '<!-- pilot:end -->'
 
 const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
+const sanitizeBlock = (b: string): string =>
+  b.replaceAll(BEGIN_MARK, '<!-- pilot:begin (escaped) -->')
+   .replaceAll(END_MARK, '<!-- pilot:end (escaped) -->')
+
 export function upsertMarkedBlock(existing: string, block: string): string {
-  const rendered = `${BEGIN_MARK}\n${block}\n${END_MARK}`
+  const rendered = `${BEGIN_MARK}\n${sanitizeBlock(block)}\n${END_MARK}`
   const re = new RegExp(`${escapeRegExp(BEGIN_MARK)}[\\s\\S]*?${escapeRegExp(END_MARK)}`)
   if (re.test(existing)) return existing.replace(re, () => rendered)
   if (existing === '') return `${rendered}\n`
