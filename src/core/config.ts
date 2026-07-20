@@ -6,7 +6,7 @@ import { configDir } from './paths.js'
 const schema = z.object({
   connections: z.array(z.object({
     id: z.string(), kind: z.enum(['local', 'git']), location: z.string(),
-    priority: z.number().int().default(0)
+    priority: z.number().int().optional()
   })).default([]),
   approvedDeclarations: z.array(z.string()).default([]),
   syncPolicy: z.enum(['auto', 'manual']).default('auto'),

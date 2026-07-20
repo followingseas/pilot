@@ -11,13 +11,16 @@ export interface RutterSource {
   rootDir: string; manifest: RutterManifest; priority: number
 }
 
+// 에러 메시지에 git 명령 전체(자격증명 포함 URL)가 노출되지 않도록 마스킹
+const redactCredentials = (text: string): string => text.replace(/\/\/[^@/\s]+@/g, '//***@')
+
 export function loadSource(conn: Connection): RutterSource {
   const rootDir = conn.kind === 'local' ? conn.location : sourceCacheDir(conn.id)
   if (!existsSync(rootDir)) {
     throw new PilotError(`source '${conn.id}' 캐시가 없습니다`, `pilot sync ${conn.id} 를 실행하세요`)
   }
   const manifest = parseManifest(rootDir)
-  return { id: conn.id, kind: conn.kind, rootDir, manifest, priority: conn.priority || manifest.priority }
+  return { id: conn.id, kind: conn.kind, rootDir, manifest, priority: conn.priority ?? manifest.priority }
 }
 
 export function cloneSource(conn: Connection): void {
@@ -28,6 +31,8 @@ export function cloneSource(conn: Connection): void {
   try {
     execFileSync('git', ['clone', '--depth', '1', conn.location, tmp], { stdio: ['ignore', 'ignore', 'pipe'] })
     renameSync(tmp, dest)   // 성공 시에만 원자적으로 캐시 반영
+  } catch (e) {
+    throw new PilotError(`source clone 실패: ${redactCredentials((e as Error).message)}`)
   } finally {
     rmSync(tmp, { recursive: true, force: true })
   }
@@ -36,9 +41,13 @@ export function cloneSource(conn: Connection): void {
 export function fetchSource(conn: Connection): void {
   const dest = sourceCacheDir(conn.id)
   if (!existsSync(dest)) { cloneSource(conn); return }
-  // fetch 성공 후에만 reset — 실패하면 기존 캐시 불변
-  execFileSync('git', ['fetch', '--depth', '1', 'origin'], { cwd: dest, stdio: ['ignore', 'ignore', 'pipe'] })
-  execFileSync('git', ['reset', '--hard', 'FETCH_HEAD'], { cwd: dest, stdio: ['ignore', 'ignore', 'pipe'] })
+  try {
+    // fetch 성공 후에만 reset — 실패하면 기존 캐시 불변
+    execFileSync('git', ['fetch', '--depth', '1', 'origin'], { cwd: dest, stdio: ['ignore', 'ignore', 'pipe'] })
+    execFileSync('git', ['reset', '--hard', 'FETCH_HEAD'], { cwd: dest, stdio: ['ignore', 'ignore', 'pipe'] })
+  } catch (e) {
+    throw new PilotError(`source fetch 실패: ${redactCredentials((e as Error).message)}`)
+  }
 }
 
 export function loadProjectSource(projectRoot: string): RutterSource | null {
