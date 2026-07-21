@@ -162,7 +162,7 @@ npm test            # vitest
 npm run build       # tsup 프로덕션 빌드
 ```
 
-커밋 메시지는 [Conventional Commits](https://www.conventionalcommits.org/ko/v1.0.0/)를 따른다.
+기여 절차와 커밋 규칙은 [기여 안내](https://github.com/followingseas/.github/blob/main/CONTRIBUTING.md)를 참조하십시오.
 
 ## 라이선스
 
