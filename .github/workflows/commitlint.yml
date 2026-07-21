@@ -1,0 +1,10 @@
+name: commitlint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  commitlint:
+    uses: followingseas/.github/.github/workflows/commitlint.yml@main
