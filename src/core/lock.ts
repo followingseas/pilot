@@ -77,7 +77,8 @@ export interface BuildLockInput {
   releaseName: string
   pkg: { name: string; version?: string }
   revision: number
-  sources: { source: RutterSource; location: string }[]
+  /** digest를 이미 계산했으면 전달 — content digest는 synthesize 전체 패스라 재계산이 비싸다 */
+  sources: { source: RutterSource; location: string; digest?: string }[]
   dependencies: { name: string; version?: string; digest: string }[]
   valuesFiles: string[]
   valuesDigest: string
@@ -93,10 +94,10 @@ export function buildLock(input: BuildLockInput): RutterLock {
       version: input.pkg.version, revision: input.revision
     },
     resolved: {
-      sources: input.sources.map(({ source, location }) => ({
+      sources: input.sources.map(({ source, location, digest }) => ({
         id: source.id, kind: source.kind,
         location: redactCredentials(location),
-        digest: computeSourceDigest(source)
+        digest: digest ?? computeSourceDigest(source)
       })),
       dependencies: input.dependencies
     },

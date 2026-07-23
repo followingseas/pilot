@@ -33,7 +33,9 @@ export function lintPackage(dir: string): { errors: string[]; warnings: string[]
     else {
       try {
         const parsed = parse(readFileSync(abs, 'utf8'))
-        if (parsed !== null && typeof parsed !== 'object') errors.push(`'${m.defaultsFile}'은 YAML 객체여야 합니다`)
+        if (parsed !== null && (typeof parsed !== 'object' || Array.isArray(parsed))) {
+          errors.push(`'${m.defaultsFile}'은 YAML 객체여야 합니다`)
+        }
       } catch (e) { errors.push(`'${m.defaultsFile}' 파싱 실패: ${(e as Error).message}`) }
     }
   }

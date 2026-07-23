@@ -1,8 +1,7 @@
 import { existsSync, rmSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { cloneSource, loadSource, type RutterSource } from './source.js'
 import { isGitUrl, normalizeRemoteUrl, runGit } from './git.js'
-import { sourceCacheDir } from './paths.js'
+import { sourceCacheDir, resolveWithin } from './paths.js'
 import { parseManifest } from './manifest.js'
 import { PilotError } from './errors.js'
 
@@ -37,7 +36,9 @@ export function resolveDependencies(parent: RutterSource): ResolvedDependency[] 
       ensureGitDepCache(id, dep.repository)
       source = loadSource({ id, kind: 'git', location: dep.repository })
     } else {
-      const dir = resolve(parent.rootDir, dep.repository)
+      // 로컬 dep은 패키지 루트 안으로 제한 — manifest 유래 경로로 임의 디렉터리를 읽지 못하게 한다.
+      // 패키지 밖의 dep은 git URL로 선언해야 한다
+      const dir = resolveWithin(parent.rootDir, dep.repository)
       if (!existsSync(dir)) {
         throw new PilotError(`dependency '${dep.name}' 경로가 없습니다: ${dep.repository}`)
       }

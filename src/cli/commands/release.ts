@@ -1,7 +1,7 @@
 import type { Command } from 'commander'
 import { resolveRelease, type ResolvedRelease } from '../../core/engine.js'
 import { applyArtifacts, removeStaleArtifacts, type RenderedArtifact } from '../../core/adapters.js'
-import { writeLock, readLock, parseLock } from '../../core/lock.js'
+import { writeLock, readLock, parseLock, type RutterLock } from '../../core/lock.js'
 import {
   readRelease, writeRelease, saveHistory, listHistory,
   loadHistoryArtifacts, loadHistoryValues, loadHistoryRelease, loadHistoryLock, type PilotRelease
@@ -53,20 +53,31 @@ function buildReleaseState(
 }
 
 // 쓰기 순서: history 스냅샷 → 산출물 → stale 정리 → lock·release(상태 파일 마지막).
-// 중간 실패 시 상태 파일은 이전 revision을 유지하므로 재실행으로 복구된다
+// 중간 실패 시 상태 파일은 이전 revision을 유지하므로 재실행으로 복구된다.
+// 이 순서는 crash-recovery 보장을 인코딩하므로 deploy와 rollback이 반드시 이 함수 하나를 공유한다
+function commitRelease(
+  projectRoot: string, release: PilotRelease, artifacts: RenderedArtifact[],
+  values: Record<string, unknown>, lock: RutterLock, previousArtifactPaths: string[] | null
+): { written: string[]; removed: string[] } {
+  saveHistory(projectRoot, release, artifacts, values, lock)
+  const written = applyArtifacts(projectRoot, artifacts)
+  const removed = previousArtifactPaths
+    ? removeStaleArtifacts(projectRoot, previousArtifactPaths, release.artifacts.map(a => a.path))
+    : []
+  writeLock(projectRoot, lock)
+  writeRelease(projectRoot, release)
+  return { written, removed }
+}
+
 function deploy(
   name: string, revision: number, previous: PilotRelease | null, resolved: ResolvedRelease
 ): void {
   printWarnings(resolved.warnings)
   const release = buildReleaseState(name, revision, previous?.metadata.revision ?? null, resolved)
   try {
-    saveHistory(resolved.projectRoot, release, resolved.artifacts, resolved.values, resolved.lock)
-    const written = applyArtifacts(resolved.projectRoot, resolved.artifacts)
-    const removed = previous
-      ? removeStaleArtifacts(resolved.projectRoot, previous.artifacts.map(a => a.path), release.artifacts.map(a => a.path))
-      : []
-    writeLock(resolved.projectRoot, resolved.lock)
-    writeRelease(resolved.projectRoot, release)
+    const { written, removed } = commitRelease(
+      resolved.projectRoot, release, resolved.artifacts, resolved.values, resolved.lock,
+      previous ? previous.artifacts.map(a => a.path) : null)
     console.log(`✓ release '${name}' revision ${revision} 배포`)
     console.log(`✓ 산출물: ${written.join(', ')}`)
     if (removed.length > 0) console.log(`✓ 이전 revision 산출물 정리: ${removed.join(', ')}`)
@@ -170,11 +181,7 @@ export function registerRelease(program: Command): void {
         history: { previousRevision: current.metadata.revision }
       }
       try {
-        saveHistory(projectRoot, release, artifacts, targetValues, lock)
-        applyArtifacts(projectRoot, artifacts)
-        removeStaleArtifacts(projectRoot, current.artifacts.map(a => a.path), release.artifacts.map(a => a.path))
-        writeLock(projectRoot, lock)
-        writeRelease(projectRoot, release)
+        commitRelease(projectRoot, release, artifacts, targetValues, lock, current.artifacts.map(a => a.path))
       } catch (e) {
         throw new PilotError(
           `rollback 중 실패 — 프로젝트 파일이 부분적으로 갱신되었을 수 있습니다: ${(e as Error).message}`,

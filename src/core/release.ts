@@ -40,8 +40,9 @@ export function readRelease(projectRoot: string): PilotRelease | null {
   if (!existsSync(file)) return null
   try { return releaseSchema.parse(parse(readFileSync(file, 'utf8'))) }
   catch (e) {
+    // install/upgrade도 이 함수를 먼저 호출하므로 "재실행" 힌트는 막다른 길이다 — 삭제 후 재설치를 안내
     throw new PilotError(`'${file}'이 손상되었습니다: ${(e as Error).message}`,
-      'pilot release install 또는 upgrade 로 재생성하세요')
+      `'${file}'을 백업 후 삭제한 뒤 pilot release install 을 다시 실행하세요`)
   }
 }
 
@@ -63,18 +64,28 @@ export function saveHistory(
   if (lock !== undefined) writeFileSync(join(dir, 'lock.yaml'), stringify(lock))
 }
 
+// 존재하지만 파싱/스키마 검증에 실패한 history 파일은 raw ZodError 대신 복구 힌트를 담아 던진다
+function parseHistoryFile<T>(file: string, parser: (data: unknown) => T): T {
+  try { return parser(parse(readFileSync(file, 'utf8'))) }
+  catch (e) {
+    throw new PilotError(`'${file}'이 손상되었습니다: ${(e as Error).message}`,
+      'pilot release history 로 온전한 revision을 확인하세요')
+  }
+}
+
 /** 이전 revision의 effective values. history가 없으면(fresh clone 등) null — 빈 values와 구분해야
  *  locked-field 비교가 조작된 기준값으로 통과/실패하지 않는다 */
 export function loadHistoryValues(projectRoot: string, revision: number): Record<string, unknown> | null {
   const file = join(historyDir(projectRoot, revision), 'values.yaml')
   if (!existsSync(file)) return null
-  const parsed = parse(readFileSync(file, 'utf8')) as { values?: Record<string, unknown> } | null
+  const parsed = parseHistoryFile(file, d => d as { values?: Record<string, unknown> } | null)
   return parsed?.values ?? {}
 }
 
 export function loadHistoryLock(projectRoot: string, revision: number): unknown | null {
   const file = join(historyDir(projectRoot, revision), 'lock.yaml')
-  return existsSync(file) ? parse(readFileSync(file, 'utf8')) : null
+  if (!existsSync(file)) return null
+  return parseHistoryFile(file, d => d)
 }
 
 export function loadHistoryRelease(projectRoot: string, revision: number): PilotRelease {
@@ -82,7 +93,7 @@ export function loadHistoryRelease(projectRoot: string, revision: number): Pilot
   if (!existsSync(file)) {
     throw new PilotError(`revision ${revision}의 history가 없습니다`, 'pilot release history <name> 로 revision을 확인하세요')
   }
-  return releaseSchema.parse(parse(readFileSync(file, 'utf8')))
+  return parseHistoryFile(file, d => releaseSchema.parse(d))
 }
 
 /** revision 목록 — 일부 revision이 손상돼도 목록 자체는 계속 제공한다(진단용 명령이므로) */
@@ -106,5 +117,5 @@ export function loadHistoryArtifacts(projectRoot: string, revision: number): Ren
   if (!existsSync(file)) {
     throw new PilotError(`revision ${revision}의 history가 없습니다`, 'pilot release history <name> 로 revision을 확인하세요')
   }
-  return artifactsSchema.parse(parse(readFileSync(file, 'utf8'))).artifacts
+  return parseHistoryFile(file, d => artifactsSchema.parse(d)).artifacts
 }

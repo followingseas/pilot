@@ -137,13 +137,17 @@ export function resolveRelease(cwd: string, releaseName: string, opts: ResolveRe
   const valuesDigest = `sha256:${effectiveValuesDigest(values)}`
   const lockedFields = pkg.manifest.lockedFields
 
+  // dep digest는 여기서 한 번만 계산하고 lock의 sources 목록에도 재사용한다 (content digest는 비싸다)
+  const depDigests = new Map(dependencies.map(d => [d.source.id, computeSourceDigest(d.source)]))
   const lock = buildLock({
     releaseName,
     pkg: { name: pkg.manifest.name, version: pkg.manifest.version },
     revision: opts.revision,
-    sources: sources.map(s => ({ source: s, location: sourceLocation(s, config) })),
+    sources: sources.map(s => ({
+      source: s, location: sourceLocation(s, config), digest: depDigests.get(s.id)
+    })),
     dependencies: dependencies.map(d => ({
-      name: d.name, version: d.version, digest: computeSourceDigest(d.source)
+      name: d.name, version: d.version, digest: depDigests.get(d.source.id)!
     })),
     valuesFiles, valuesDigest, lockedFields
   })

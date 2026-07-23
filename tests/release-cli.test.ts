@@ -169,8 +169,9 @@ describe('pilot release', () => {
   })
 
   it('dependency: 로컬 dep의 문서·defaults가 병합되고 lock에 기록된다', () => {
-    const dep = mkdtempSync(join(tmpdir(), 'dep-'))
-    mkdirSync(join(dep, 'docs'))
+    // 로컬 dep은 패키지 루트 안으로 제한된다 — vendor/ 하위에 배치
+    const dep = join(pkgDir, 'vendor', 'shared-git')
+    mkdirSync(join(dep, 'docs'), { recursive: true })
     writeFileSync(join(dep, 'rutter.yaml'), [
       'apiVersion: rutter.followingseas.dev/v2alpha1', 'kind: Package',
       'metadata:', '  name: shared-git', '  version: 1.4.2',
@@ -180,15 +181,25 @@ describe('pilot release', () => {
     ].join('\n'))
     writeFileSync(join(dep, 'defaults.yaml'), 'git:\n  flow: github-flow\n')
     writeFileSync(join(dep, 'docs', 'git.md'), '# DEP git 규칙\n')
-    // 패키지에 dependency 선언 추가
+    // 패키지에 dependency 선언 추가 (패키지 루트 기준 상대 경로)
     const manifest = readFileSync(join(pkgDir, 'rutter.yaml'), 'utf8')
     writeFileSync(join(pkgDir, 'rutter.yaml'),
-      `${manifest}\ndependencies:\n  - name: shared-git\n    version: 1.4.2\n    repository: ${dep}\n`)
+      `${manifest}\ndependencies:\n  - name: shared-git\n    version: 1.4.2\n    repository: vendor/shared-git\n`)
 
     run(['release', 'install', 'payment-api'], proj)
     const lock = parse(readFileSync(join(proj, '.pilot/rutter.lock'), 'utf8'))
     expect(lock.resolved.dependencies[0]).toMatchObject({ name: 'shared-git', version: '1.4.2' })
     expect(lock.resolved.dependencies[0].digest).toMatch(/^sha256:/)
     expect(readFileSync(join(proj, '.pilot/context.md'), 'utf8')).toContain('DEP git 규칙')
+    // dep defaults가 최약 레이어로 병합된다
+    const historyValues = parse(readFileSync(join(proj, '.pilot/history/1/values.yaml'), 'utf8'))
+    expect(historyValues.values.git.flow).toBe('github-flow')
+  })
+
+  it('dependency: 패키지 루트 밖 로컬 경로는 거부된다', () => {
+    const manifest = readFileSync(join(pkgDir, 'rutter.yaml'), 'utf8')
+    writeFileSync(join(pkgDir, 'rutter.yaml'),
+      `${manifest}\ndependencies:\n  - name: evil\n    repository: ../../etc\n`)
+    expect(runFail(['release', 'install', 'payment-api'], proj)).toContain('벗어')
   })
 })

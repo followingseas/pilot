@@ -61,8 +61,16 @@ export function createServer(): McpServer {
             `${release ? 'rutter.lock' : 'release.yaml'}이 없습니다 — 배포가 중단된 부분 상태일 수 있으니 pilot release upgrade 로 복구하세요`]
         })
       }
+      // revision뿐 아니라 release·package 정체성도 대조한다 — 다른 패키지의 lock이 섞인 상태를 잡기 위함
       if (release.metadata.revision !== lock.release.revision) {
         warnings.push(`release.yaml(revision ${release.metadata.revision})과 rutter.lock(revision ${lock.release.revision})이 일치하지 않습니다`)
+      }
+      if (release.metadata.name !== lock.release.name) {
+        warnings.push(`release 이름 불일치: release.yaml '${release.metadata.name}' vs rutter.lock '${lock.release.name}'`)
+      }
+      if (release.spec.package.name !== lock.release.package
+        || (release.spec.package.version ?? null) !== (lock.release.version ?? null)) {
+        warnings.push(`package 불일치: release.yaml '${release.spec.package.name}@${release.spec.package.version ?? '?'}' vs rutter.lock '${lock.release.package}@${lock.release.version ?? '?'}'`)
       }
       return asText({
         installed: true,
@@ -90,9 +98,8 @@ export function createServer(): McpServer {
       return asText({
         agent,
         appliedPolicySets: applied.map(s => ({ name: s.name, version: s.version, sourceId: s.sourceId })),
-        rules: rulesForAgent(sets, agent).map(r => ({
-          id: r.id, level: r.level, category: r.category, statement: r.statement, rationale: r.rationale
-        })),
+        // rule은 축약 없이 전체 계약(examples·checks·remediation 포함)으로 반환한다
+        rules: rulesForAgent(sets, agent),
         documents: synthesis.items.map(i => ({
           path: i.key, source: i.sourceId, shadowedBy: i.shadows.map(s => s.sourceId)
         }))
