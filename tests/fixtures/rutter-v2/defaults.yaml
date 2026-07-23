@@ -1,0 +1,10 @@
+profile:
+  language: typescript
+  testCommand: npm test
+
+security:
+  signing:
+    required: false
+
+policies:
+  rules: []
