@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import type { SynthesisResult } from './synthesize.js'
 import type { AdaptersConfig } from './manifest.js'
-import type { PolicyRule } from './policy.js'
+import { rulesForAgent, type PolicyRule, type PolicySet } from './policy.js'
 import { renderContextFile, upsertMarkedBlock } from './stub.js'
 import { sha256Hex } from './digest.js'
 
@@ -21,7 +21,7 @@ export interface AdapterInput {
   releaseName?: string
   revision?: number
   synthesis: SynthesisResult
-  rules: PolicyRule[]
+  policySets: PolicySet[]
   adapters: AdaptersConfig
   lockDigest?: string
 }
@@ -52,34 +52,38 @@ const withSections = (...sections: string[]): string => sections.filter(Boolean)
 const artifact = (path: string, block: string, wholeFile = false): RenderedArtifact =>
   ({ path, block, wholeFile, checksumSha256: sha256Hex(block) })
 
-/** 활성 어댑터별 산출물 렌더 — source of truth(policy IR·synthesis)에서 target별 표면을 만든다 */
+/** 활성 어댑터별 산출물 렌더 — source of truth(policy IR·synthesis)에서 target별 표면을 만든다.
+ *  rule은 agent별로 필터되므로 특정 agent 전용 PolicySet은 다른 표면에 새지 않는다 */
 export function renderArtifacts(input: AdapterInput): RenderedArtifact[] {
-  const { adapters, rules, synthesis, rutterName } = input
+  const { adapters, policySets, synthesis, rutterName } = input
   const context = renderContextFile(synthesis, rutterName)
-  const rulesMd = renderRulesMarkdown(rules)
   const prov = provenance(input)
+  const rulesMd = (agent: string) => renderRulesMarkdown(rulesForAgent(policySets, agent))
   const out: RenderedArtifact[] = [artifact('.pilot/context.md', context, true)]
 
   if (adapters.claude.enabled) {
+    const md = rulesMd('claude')
     out.push(artifact(adapters.claude.output, withSections(
       [`이 프로젝트는 ${rutterName}의 규약을 따른다. @.pilot/context.md`,
         `상세 규약·검색은 MCP 도구 pilot_get_context / pilot_search_knowledge / pilot_get_policy 사용.`].join('\n'),
-      rulesMd && `## 핵심 규칙\n\n${rulesMd}`,
+      md && `## 핵심 규칙\n\n${md}`,
       prov
     )))
   }
   if (adapters.codex.enabled) {
+    const md = rulesMd('codex')
     out.push(artifact(adapters.codex.output, withSections(
       `이 프로젝트는 ${rutterName}의 규약을 따른다. 아래는 합성된 규약 전문이다.`,
-      rulesMd && `## 핵심 규칙\n\n${rulesMd}`,
+      md && `## 핵심 규칙\n\n${md}`,
       context,
       prov
     )))
   }
   if (adapters.copilot.enabled) {
+    const md = rulesMd('copilot')
     out.push(artifact(adapters.copilot.output, withSections(
       `This repository follows the ${rutterName} policy package.`,
-      rulesMd && `## Rules\n\n${rulesMd}`,
+      md && `## Rules\n\n${md}`,
       `See \`.pilot/context.md\` for the full synthesized conventions.`,
       prov
     )))

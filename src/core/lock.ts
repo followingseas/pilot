@@ -96,6 +96,8 @@ export function buildLock(input: BuildLockInput): RutterLock {
   }
 }
 
+export const parseLock = (data: unknown): RutterLock => lockSchema.parse(data)
+
 export function readLock(projectRoot: string): RutterLock | null {
   const file = lockPath(projectRoot)
   if (!existsSync(file)) return null

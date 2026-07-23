@@ -5,12 +5,17 @@ import { join } from 'node:path'
 import { renderArtifacts, applyArtifacts, renderRulesMarkdown, type AdapterInput } from '../src/core/adapters.js'
 import { defaultAdapters } from '../src/core/manifest.js'
 import { sha256Hex } from '../src/core/digest.js'
-import type { PolicyRule } from '../src/core/policy.js'
+import type { PolicyRule, PolicySet } from '../src/core/policy.js'
 
 const rules: PolicyRule[] = [
   { id: 'git.branch.naming', level: 'error', statement: '브랜치는 feature/<slug> 형식을 사용한다.', rationale: '일관성' },
   { id: 'review.why', level: 'warn', statement: 'Why를 적는다.' }
 ]
+const policySets: PolicySet[] = [{
+  name: 'org-core',
+  appliesTo: { agents: ['generic'], repositories: ['*'], paths: ['**'] },
+  rules, sourceId: 's'
+}]
 
 const input = (over: Partial<AdapterInput> = {}): AdapterInput => ({
   rutterName: 'acme-core',
@@ -20,7 +25,7 @@ const input = (over: Partial<AdapterInput> = {}): AdapterInput => ({
     items: [{ key: 'docs/a.md', scope: 'organization', sourceId: 's', filePath: '/x', content: '# A', shadows: [] }],
     warnings: []
   },
-  rules,
+  policySets,
   adapters: defaultAdapters(),
   lockDigest: 'sha256:abc',
   ...over
@@ -53,6 +58,17 @@ describe('renderArtifacts', () => {
     expect(claude.block).toContain('- release: payment-api · revision 3')
     expect(claude.block).toContain('- digest: sha256:abc')
     expect(claude.block).toContain('- [error] 브랜치는')
+  })
+  it('agent 전용 PolicySet은 다른 표면에 새지 않는다', () => {
+    const sets: PolicySet[] = [...policySets, {
+      name: 'claude-only',
+      appliesTo: { agents: ['claude'], repositories: ['*'], paths: ['**'] },
+      rules: [{ id: 'c.only', level: 'info', statement: 'Claude 전용 규칙' }],
+      sourceId: 's'
+    }]
+    const arts = renderArtifacts(input({ policySets: sets }))
+    expect(arts.find(a => a.path === 'CLAUDE.md')!.block).toContain('Claude 전용 규칙')
+    expect(arts.find(a => a.path === 'AGENTS.md')!.block).not.toContain('Claude 전용 규칙')
   })
   it('checksum은 block의 sha256이고 같은 입력이면 동일하다', () => {
     const [a] = renderArtifacts(input())

@@ -3,7 +3,8 @@ import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
-  readRelease, writeRelease, saveHistory, listHistory, loadHistoryArtifacts, type PilotRelease
+  readRelease, writeRelease, saveHistory, listHistory, loadHistoryArtifacts,
+  loadHistoryValues, loadHistoryRelease, type PilotRelease
 } from '../src/core/release.js'
 import { V2_API_VERSION } from '../src/core/manifest.js'
 import type { RenderedArtifact } from '../src/core/adapters.js'
@@ -28,13 +29,15 @@ describe('release 상태', () => {
     writeRelease(root, release(1))
     expect(readRelease(root)).toEqual(release(1))
   })
-  it('history 저장·목록·아티팩트 복원', () => {
+  it('history 저장·목록·아티팩트·values 복원', () => {
     const root = mkdtempSync(join(tmpdir(), 'pilot-rel-'))
-    saveHistory(root, release(1), artifacts)
-    saveHistory(root, release(2), [{ ...artifacts[0]!, block: '규칙 v2' }])
+    saveHistory(root, release(1), artifacts, { a: 1 })
+    saveHistory(root, release(2), [{ ...artifacts[0]!, block: '규칙 v2' }], { a: 2 })
     expect(listHistory(root).map(r => r.metadata.revision)).toEqual([1, 2])
     expect(loadHistoryArtifacts(root, 1)[0]!.block).toBe('규칙 v1')
     expect(loadHistoryArtifacts(root, 2)[0]!.block).toBe('규칙 v2')
+    expect(loadHistoryValues(root, 1)).toEqual({ a: 1 })
+    expect(loadHistoryRelease(root, 2).metadata.revision).toBe(2)
   })
   it('없는 revision 로드는 PilotError', () => {
     const root = mkdtempSync(join(tmpdir(), 'pilot-rel-'))

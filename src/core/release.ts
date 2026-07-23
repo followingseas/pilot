@@ -46,12 +46,37 @@ export function writeRelease(projectRoot: string, release: PilotRelease): void {
   writeFileSync(releasePath(projectRoot), stringify(release))
 }
 
-/** revision별 release 스냅샷과 렌더 블록 원문을 보존한다 — rollback의 복원 원본 */
-export function saveHistory(projectRoot: string, release: PilotRelease, artifacts: RenderedArtifact[]): void {
+/** revision별 release 스냅샷·렌더 블록 원문·effective values·lock을 보존한다 — rollback과 locked-field 비교의 원본 */
+export function saveHistory(
+  projectRoot: string, release: PilotRelease, artifacts: RenderedArtifact[],
+  values: Record<string, unknown>, lock?: unknown
+): void {
   const dir = historyDir(projectRoot, release.metadata.revision)
   mkdirSync(dir, { recursive: true })
   writeFileSync(join(dir, 'release.yaml'), stringify(release))
   writeFileSync(join(dir, 'artifacts.yaml'), stringify({ artifacts }))
+  writeFileSync(join(dir, 'values.yaml'), stringify({ values }))
+  if (lock !== undefined) writeFileSync(join(dir, 'lock.yaml'), stringify(lock))
+}
+
+export function loadHistoryValues(projectRoot: string, revision: number): Record<string, unknown> {
+  const file = join(historyDir(projectRoot, revision), 'values.yaml')
+  if (!existsSync(file)) return {}
+  const parsed = parse(readFileSync(file, 'utf8')) as { values?: Record<string, unknown> } | null
+  return parsed?.values ?? {}
+}
+
+export function loadHistoryLock(projectRoot: string, revision: number): unknown | null {
+  const file = join(historyDir(projectRoot, revision), 'lock.yaml')
+  return existsSync(file) ? parse(readFileSync(file, 'utf8')) : null
+}
+
+export function loadHistoryRelease(projectRoot: string, revision: number): PilotRelease {
+  const file = join(historyDir(projectRoot, revision), 'release.yaml')
+  if (!existsSync(file)) {
+    throw new PilotError(`revision ${revision}의 history가 없습니다`, 'pilot release history <name> 로 revision을 확인하세요')
+  }
+  return releaseSchema.parse(parse(readFileSync(file, 'utf8')))
 }
 
 export function listHistory(projectRoot: string): PilotRelease[] {
