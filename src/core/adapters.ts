@@ -1,10 +1,11 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import type { SynthesisResult } from './synthesize.js'
 import type { AdaptersConfig } from './manifest.js'
 import { rulesForAgent, type PolicyRule, type PolicySet } from './policy.js'
-import { renderContextFile, upsertMarkedBlock } from './stub.js'
+import { renderContextFile, upsertMarkedBlock, removeMarkedBlock, PILOT_GITIGNORE } from './stub.js'
 import { sha256Hex } from './digest.js'
+import { resolveWithin } from './paths.js'
 
 export interface RenderedArtifact {
   path: string
@@ -91,14 +92,15 @@ export function renderArtifacts(input: AdapterInput): RenderedArtifact[] {
   return out
 }
 
-/** 산출물 적용 — wholeFile은 통째 기록, 블록형은 marked block으로 사용자 영역을 보존하며 삽입 */
+/** 산출물 적용 — wholeFile은 통째 기록, 블록형은 marked block으로 사용자 영역을 보존하며 삽입.
+ *  경로는 manifest 유래(신뢰 불가)이므로 항상 projectRoot 안으로 강제한다 */
 export function applyArtifacts(projectRoot: string, artifacts: RenderedArtifact[]): string[] {
   const written: string[] = []
   const pilotDir = join(projectRoot, '.pilot')
   mkdirSync(pilotDir, { recursive: true })
-  writeFileSync(join(pilotDir, '.gitignore'), '*\n!rutter.lock\n!release.yaml\n')
+  writeFileSync(join(pilotDir, '.gitignore'), PILOT_GITIGNORE)
   for (const a of artifacts) {
-    const path = join(projectRoot, a.path)
+    const path = resolveWithin(projectRoot, a.path)
     mkdirSync(dirname(path), { recursive: true })
     if (a.wholeFile) {
       writeFileSync(path, a.block)
@@ -109,4 +111,26 @@ export function applyArtifacts(projectRoot: string, artifacts: RenderedArtifact[
     written.push(a.path)
   }
   return written
+}
+
+/** 이전 revision에는 있었으나 이번에 사라진 산출물 정리 — 남겨두면 낡은 정책이 계속 소비된다.
+ *  `.pilot/` 아래는 삭제, 사용자 파일은 marked block만 제거(본문이 비면 파일 삭제) */
+export function removeStaleArtifacts(projectRoot: string, previousPaths: string[], currentPaths: string[]): string[] {
+  const current = new Set(currentPaths)
+  const removed: string[] = []
+  for (const rel of previousPaths.filter(p => !current.has(p))) {
+    let path: string
+    try { path = resolveWithin(projectRoot, rel) }
+    catch { continue }  // 과거 기록이 루트를 벗어나면 건드리지 않는다
+    if (!existsSync(path)) continue
+    if (rel.startsWith('.pilot/')) {
+      rmSync(path, { force: true })
+    } else {
+      const stripped = removeMarkedBlock(readFileSync(path, 'utf8'))
+      if (stripped.trim() === '') rmSync(path, { force: true })
+      else writeFileSync(path, stripped)
+    }
+    removed.push(rel)
+  }
+  return removed
 }

@@ -44,11 +44,25 @@ export function createServer(): McpServer {
     { cwd: z.string().optional() },
     ({ cwd }) => {
       const base = cwd ?? process.cwd()
-      const projectRoot = detectProject(base)?.root ?? base
+      const detected = detectProject(base)
+      const projectRoot = detected?.root ?? base
+      const warnings: string[] = []
+      if (!detected) warnings.push(`'${base}'는 git 프로젝트가 아니라 해당 경로를 그대로 project root로 사용했습니다`)
       const release = readRelease(projectRoot)
       const lock = readLock(projectRoot)
+      if (!release && !lock) {
+        return asText({ installed: false, warnings: [...warnings, 'release가 설치되지 않았습니다 — pilot release install 을 실행하세요'] })
+      }
       if (!release || !lock) {
-        return asText({ installed: false, warnings: ['release가 설치되지 않았습니다 — pilot release install 을 실행하세요'] })
+        // 부분 상태는 "미설치"와 다르다 — install을 다시 돌리라고 오도하지 않는다
+        return asText({
+          installed: false,
+          warnings: [...warnings,
+            `${release ? 'rutter.lock' : 'release.yaml'}이 없습니다 — 배포가 중단된 부분 상태일 수 있으니 pilot release upgrade 로 복구하세요`]
+        })
+      }
+      if (release.metadata.revision !== lock.release.revision) {
+        warnings.push(`release.yaml(revision ${release.metadata.revision})과 rutter.lock(revision ${lock.release.revision})이 일치하지 않습니다`)
       }
       return asText({
         installed: true,
@@ -62,7 +76,7 @@ export function createServer(): McpServer {
         lockedFields: lock.lockedFields,
         artifacts: release.artifacts,
         generatedAt: lock.generatedAt,
-        warnings: []
+        warnings
       })
     })
 

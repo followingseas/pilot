@@ -19,22 +19,31 @@ describe('lintPackage', () => {
     expect(errors).toEqual([])
     expect(warnings[0]).toContain('migrate')
   })
-  it('defaultsFile 부재·고장난 policy·output 탈출을 에러로 잡는다', () => {
+  it('defaultsFile 부재·고장난 policy를 에러로 잡는다', () => {
     const dir = mkdtempSync(join(tmpdir(), 'pilot-lint-'))
     cpSync(FIXTURE_V2, dir, { recursive: true })
     writeFileSync(join(dir, 'policies', 'bad.yaml'), 'kind: 뭔가잘못됨\n')
-    let manifest = [
+    const manifest = [
       'apiVersion: rutter.followingseas.dev/v2alpha1', 'kind: Package',
       'metadata:', '  name: x', '  version: 1.0.0',
       'package:', '  scope: organization',
       'sources:', '  policies:', '    dir: policies',
-      'values:', '  defaultsFile: 없는파일.yaml',
-      'adapters:', '  claude:', '    output: ../탈출.md'
+      'values:', '  defaultsFile: 없는파일.yaml'
     ].join('\n')
     writeFileSync(join(dir, 'rutter.yaml'), manifest)
     const { errors } = lintPackage(dir)
     expect(errors.some(e => e.includes('없는파일.yaml'))).toBe(true)
     expect(errors.some(e => e.includes('bad.yaml'))).toBe(true)
+  })
+  it('adapter output 탈출 경로는 manifest 파싱 자체가 거부된다', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'pilot-lint-'))
+    writeFileSync(join(dir, 'rutter.yaml'), [
+      'apiVersion: rutter.followingseas.dev/v2alpha1', 'kind: Package',
+      'metadata:', '  name: x', '  version: 1.0.0',
+      'package:', '  scope: organization',
+      'adapters:', '  claude:', '    output: ../탈출.md'
+    ].join('\n'))
+    const { errors } = lintPackage(dir)
     expect(errors.some(e => e.includes('탈출.md'))).toBe(true)
   })
   it('manifest 자체가 고장이면 에러 하나로 반환한다', () => {

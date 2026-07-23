@@ -1,5 +1,5 @@
 import { readFileSync, existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, isAbsolute } from 'node:path'
 import { parse } from 'yaml'
 import { z } from 'zod'
 import { ManifestError } from './errors.js'
@@ -15,7 +15,7 @@ export interface AdaptersConfig { claude: AdapterOut; codex: AdapterOut; copilot
 export interface DependencyDecl { name: string; version?: string; repository: string; alias?: string }
 export interface MergeOverride { path: string; strategy: string }
 
-/** v1·v2 공통 정규화 모델 — 기존 소비자(synthesize/identify/source)는 name/scope/paths/repositories/priority만 본다 */
+/** v1·v2 공통 정규화 모델 — v1 소비자는 v1에 있던 필드만 사용해야 하며, v2 전용 필드는 v1 파싱 시 기본값으로 채워진다 */
 export interface RutterManifest {
   formatVersion: 1 | 2
   name: string
@@ -143,6 +143,24 @@ function normalizeV2(d: z.infer<typeof v2Schema>): RutterManifest {
   }
 }
 
+// manifest가 가리키는 경로(어댑터 출력·policies·defaults)는 신뢰 경계 안이어야 한다.
+// 절대경로·상위 탈출('..')은 파싱 시점에 거부한다 — 쓰기/읽기 지점의 resolveWithin 가드와 이중 방어
+const isUnsafeRelPath = (p: string): boolean =>
+  isAbsolute(p) || p.split(/[\\/]/).includes('..')
+
+function validatePaths(file: string, m: RutterManifest): void {
+  for (const [agent, cfg] of Object.entries(m.adapters)) {
+    if (isUnsafeRelPath(cfg.output)) {
+      throw new ManifestError(file, `adapters.${agent}.output: 프로젝트 상대 경로만 허용됩니다: '${cfg.output}'`)
+    }
+  }
+  for (const [label, p] of [['policies dir', m.policiesDir], ['values.defaultsFile', m.defaultsFile]] as const) {
+    if (p && isUnsafeRelPath(p)) {
+      throw new ManifestError(file, `${label}: 패키지 루트 상대 경로만 허용됩니다: '${p}'`)
+    }
+  }
+}
+
 export function parseManifest(dir: string): RutterManifest {
   const file = join(dir, 'rutter.yaml')
   if (!existsSync(file)) throw new ManifestError(file, 'rutter.yaml이 없습니다')
@@ -156,7 +174,9 @@ export function parseManifest(dir: string): RutterManifest {
     const issue = parsed.error.issues[0]
     throw new ManifestError(file, `${issue?.path.join('.') || '(root)'}: ${issue?.message}`)
   }
-  return isV2
+  const manifest = isV2
     ? normalizeV2(parsed.data as z.infer<typeof v2Schema>)
     : normalizeV1(parsed.data as z.infer<typeof v1Schema>)
+  validatePaths(file, manifest)
+  return manifest
 }

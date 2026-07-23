@@ -70,7 +70,7 @@ describe('writeStub', () => {
     expect(claude).toContain('Acme Handbook')          // manifest name 템플릿
     expect(claude).toContain('@.pilot/context.md')
     expect(existsSync(join(root, '.pilot/context.md'))).toBe(true)
-    expect(readFileSync(join(root, '.pilot/.gitignore'), 'utf8')).toBe('*\n')
+    expect(readFileSync(join(root, '.pilot/.gitignore'), 'utf8')).toBe('*\n!rutter.lock\n!release.yaml\n')
   })
   it('AGENTS.md에 합성 컨텍스트 전문(픽스처 content)이 포함된다', () => {
     const root = mkdtempSync(join(tmpdir(), 'pilot-stub-'))

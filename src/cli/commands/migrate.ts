@@ -47,10 +47,11 @@ export function planMigration(dir: string): PlannedFile[] {
     }
   }
 
+  // 비파괴 파일을 먼저, 덮어쓰는 rutter.yaml을 마지막에 — 중간 실패 시 v1 상태가 보존되어 재시도 가능
   return [
-    { path: 'rutter.yaml', content: stringify(manifest), overwrite: true },
     { path: 'defaults.yaml', content: 'profile: {}\n', overwrite: false },
-    { path: 'policies/legacy-import.yaml', content: stringify(legacyPolicy), overwrite: false }
+    { path: 'policies/legacy-import.yaml', content: stringify(legacyPolicy), overwrite: false },
+    { path: 'rutter.yaml', content: stringify(manifest), overwrite: true }
   ]
 }
 
@@ -62,6 +63,7 @@ export function registerMigrate(program: Command): void {
     .action((dir: string | undefined, opts: { write?: boolean }) => {
       const target = dir ?? process.cwd()
       const planned = planMigration(target)
+      console.log('주의: v1 rutter.yaml의 예약 키(team, depends_on 등)와 주석은 변환에서 보존되지 않습니다')
       if (!opts.write) {
         console.log('dry-run — --write 시 생성/갱신될 파일:')
         for (const f of planned) console.log(`  ${f.overwrite ? '갱신' : '생성'}: ${f.path}`)

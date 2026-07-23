@@ -24,7 +24,8 @@ const v1Package = (): string => {
 describe('planMigration', () => {
   it('v1 → v2 스켈레톤 계획을 만든다', () => {
     const planned = planMigration(v1Package())
-    expect(planned.map(f => f.path)).toEqual(['rutter.yaml', 'defaults.yaml', 'policies/legacy-import.yaml'])
+    // 파괴적 덮어쓰기(rutter.yaml)는 마지막 — 중간 실패 시 v1 상태 보존
+    expect(planned.map(f => f.path)).toEqual(['defaults.yaml', 'policies/legacy-import.yaml', 'rutter.yaml'])
   })
   it('v2 패키지면 에러', () => {
     const dir = mkdtempSync(join(tmpdir(), 'pilot-mig-'))

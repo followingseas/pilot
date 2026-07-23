@@ -77,6 +77,28 @@ describe('parseManifest v2', () => {
     ].join('\n'))
     expect(parseManifest(dir).packageType).toBe('library')
   })
+  it('adapters output의 절대경로·상위 탈출을 거부한다', () => {
+    for (const bad of ['../탈출.md', '/etc/passwd', 'a/../../b.md']) {
+      const dir = mkdtempSync(join(tmpdir(), 'pilot-'))
+      writeFileSync(join(dir, 'rutter.yaml'), [
+        'apiVersion: rutter.followingseas.dev/v2alpha1', 'kind: Package',
+        'metadata:', '  name: x', '  version: 1.0.0',
+        'package:', '  scope: organization',
+        'adapters:', '  codex:', `    output: "${bad}"`
+      ].join('\n'))
+      expect(() => parseManifest(dir)).toThrow(/상대 경로/)
+    }
+  })
+  it('policiesDir·defaultsFile의 상위 탈출을 거부한다', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'pilot-'))
+    writeFileSync(join(dir, 'rutter.yaml'), [
+      'apiVersion: rutter.followingseas.dev/v2alpha1', 'kind: Package',
+      'metadata:', '  name: x', '  version: 1.0.0',
+      'package:', '  scope: organization',
+      'values:', '  defaultsFile: ../../secrets.yaml'
+    ].join('\n'))
+    expect(() => parseManifest(dir)).toThrow(/상대 경로/)
+  })
   it('dependencies 선언을 파싱한다', () => {
     const dir = mkdtempSync(join(tmpdir(), 'pilot-'))
     writeFileSync(join(dir, 'rutter.yaml'), [

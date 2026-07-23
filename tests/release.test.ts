@@ -33,11 +33,15 @@ describe('release 상태', () => {
     const root = mkdtempSync(join(tmpdir(), 'pilot-rel-'))
     saveHistory(root, release(1), artifacts, { a: 1 })
     saveHistory(root, release(2), [{ ...artifacts[0]!, block: '규칙 v2' }], { a: 2 })
-    expect(listHistory(root).map(r => r.metadata.revision)).toEqual([1, 2])
+    expect(listHistory(root).releases.map(r => r.metadata.revision)).toEqual([1, 2])
     expect(loadHistoryArtifacts(root, 1)[0]!.block).toBe('규칙 v1')
     expect(loadHistoryArtifacts(root, 2)[0]!.block).toBe('규칙 v2')
     expect(loadHistoryValues(root, 1)).toEqual({ a: 1 })
     expect(loadHistoryRelease(root, 2).metadata.revision).toBe(2)
+  })
+  it('values history가 없으면 null — 빈 values와 구분한다', () => {
+    const root = mkdtempSync(join(tmpdir(), 'pilot-rel-'))
+    expect(loadHistoryValues(root, 1)).toBeNull()
   })
   it('없는 revision 로드는 PilotError', () => {
     const root = mkdtempSync(join(tmpdir(), 'pilot-rel-'))

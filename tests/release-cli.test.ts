@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, existsSync, cpSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, existsSync, cpSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { parse } from 'yaml'
@@ -107,6 +107,65 @@ describe('pilot release', () => {
     env.XDG_CONFIG_HOME = mkdtempSync(join(tmpdir(), 'cfg2-'))
     run(['init', '--source', lib, '--yes'], p2)
     expect(runFail(['release', 'install', 'x'], p2)).toContain('library')
+  })
+
+  it('--values 파일: defaults를 덮어쓰고 lock에 기록되며, 없는 파일은 에러', () => {
+    mkdirSync(join(proj, 'values'))
+    writeFileSync(join(proj, 'values', 'app.yaml'), 'profile:\n  testCommand: pnpm test\n')
+    run(['release', 'install', 'payment-api', '--values', 'values/app.yaml'], proj)
+    const lock = parse(readFileSync(join(proj, '.pilot/rutter.lock'), 'utf8'))
+    expect(lock.values.files).toEqual(['values/app.yaml'])
+    const historyValues = parse(readFileSync(join(proj, '.pilot/history/1/values.yaml'), 'utf8'))
+    expect(historyValues.values.profile.testCommand).toBe('pnpm test')  // defaults(npm test)를 덮어씀
+    expect(historyValues.values.profile.language).toBe('typescript')    // defaults 나머지는 유지
+    expect(runFail(['release', 'upgrade', 'payment-api', '--values', '없는.yaml'], proj)).toContain('없는.yaml')
+  })
+
+  it('values 파일이 객체가 아니면 에러 (스칼라가 defaults를 지우는 것 방지)', () => {
+    writeFileSync(join(proj, 'bad.yaml'), '"그냥 문자열"\n')
+    expect(runFail(['release', 'install', 'payment-api', '--values', 'bad.yaml'], proj)).toContain('객체')
+  })
+
+  it('선언 없는 다중 connection은 패키지 결정 불가 에러', () => {
+    const pkg2 = mkdtempSync(join(tmpdir(), 'pkg2-'))
+    cpSync(FIXTURE_V2, pkg2, { recursive: true })
+    run(['connect', pkg2, '--id', 'second'], proj)
+    execFileSync('rm', [join(proj, '.rutter.yaml')])
+    expect(runFail(['release', 'install', 'payment-api'], proj)).toContain('결정할 수 없습니다')
+  })
+
+  it('선언된 source가 연결되어 있지 않으면 조용한 폴백 대신 에러', () => {
+    writeFileSync(join(proj, '.rutter.yaml'), 'source: /tmp/연결안된-다른-rutter\n')
+    expect(runFail(['release', 'install', 'payment-api'], proj)).toContain('연결되어 있지 않습니다')
+  })
+
+  it('fresh clone(history 없음): 값 불변 upgrade는 통과, locked 변경 가능성은 승인 요구', () => {
+    run(['release', 'install', 'payment-api'], proj)
+    rmSync(join(proj, '.pilot', 'history'), { recursive: true, force: true })
+    run(['release', 'upgrade', 'payment-api'], proj)   // digest 동일 → 통과
+    expect(parse(readFileSync(join(proj, '.pilot/release.yaml'), 'utf8')).metadata.revision).toBe(2)
+
+    rmSync(join(proj, '.pilot', 'history'), { recursive: true, force: true })
+    const err = runFail(['release', 'upgrade', 'payment-api', '--set', 'profile.language=kotlin'], proj)
+    expect(err).toContain('확인할 수 없습니다')
+    run(['release', 'upgrade', 'payment-api', '--set', 'profile.language=kotlin', '--approve-locked-field-change'], proj)
+    expect(parse(readFileSync(join(proj, '.pilot/release.yaml'), 'utf8')).metadata.revision).toBe(3)
+  })
+
+  it('어댑터 비활성화 upgrade 시 이전 산출물을 정리한다', () => {
+    run(['release', 'install', 'payment-api'], proj)
+    expect(existsSync(join(proj, '.github/copilot-instructions.md'))).toBe(true)
+    const manifest = readFileSync(join(pkgDir, 'rutter.yaml'), 'utf8')
+    writeFileSync(join(pkgDir, 'rutter.yaml'), manifest.replace('copilot:\n    enabled: true', 'copilot:\n    enabled: false'))
+    run(['release', 'upgrade', 'payment-api'], proj)
+    expect(existsSync(join(proj, '.github/copilot-instructions.md'))).toBe(false)
+  })
+
+  it('rollback: 없는 revision은 에러이고 상태가 변하지 않는다, 잘못된 이름도 에러', () => {
+    run(['release', 'install', 'payment-api'], proj)
+    expect(runFail(['release', 'rollback', 'payment-api', '--to-revision', '9'], proj)).toContain('revision 9')
+    expect(parse(readFileSync(join(proj, '.pilot/release.yaml'), 'utf8')).metadata.revision).toBe(1)
+    expect(runFail(['release', 'upgrade', '엉뚱한이름'], proj)).toContain('payment-api')
   })
 
   it('dependency: 로컬 dep의 문서·defaults가 병합되고 lock에 기록된다', () => {

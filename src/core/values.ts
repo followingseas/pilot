@@ -3,7 +3,10 @@ import { PilotError } from './errors.js'
 
 export interface MergeOverrideRule { path: string; strategy: string }
 
-const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+// __proto__ 등을 통한 prototype pollution 차단 — merge에서는 무시, --set에서는 명시 거부
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+
+export const isPlainObject = (v: unknown): v is Record<string, unknown> =>
   v !== null && typeof v === 'object' && !Array.isArray(v)
 
 function mergeArrays(base: unknown[], next: unknown[], strategy: string): unknown[] {
@@ -38,6 +41,7 @@ function mergeTwo(base: unknown, next: unknown, ptr: string, overrides: MergeOve
   if (isPlainObject(base) && isPlainObject(next)) {
     const out: Record<string, unknown> = { ...base }
     for (const [k, v] of Object.entries(next)) {
+      if (FORBIDDEN_KEYS.has(k)) continue
       out[k] = mergeTwo(out[k], v, `${ptr}/${k.replace(/~/g, '~0').replace(/\//g, '~1')}`, overrides)
     }
     return out
@@ -91,9 +95,12 @@ export function parseSetFlag(exprs: string[]): Record<string, unknown> {
     const eq = expr.indexOf('=')
     if (eq <= 0) throw new PilotError(`--set 형식 오류: '${expr}'`, 'key.path=value 형식을 사용하세요')
     const segs = expr.slice(0, eq).split('.')
+    if (segs.some(s => FORBIDDEN_KEYS.has(s))) {
+      throw new PilotError(`--set 경로에 예약 키를 쓸 수 없습니다: '${expr}'`)
+    }
     let cur = out
     for (const seg of segs.slice(0, -1)) {
-      if (!isPlainObject(cur[seg])) cur[seg] = {}
+      if (!Object.prototype.hasOwnProperty.call(cur, seg) || !isPlainObject(cur[seg])) cur[seg] = {}
       cur = cur[seg] as Record<string, unknown>
     }
     cur[segs[segs.length - 1]!] = coerceScalar(expr.slice(eq + 1))

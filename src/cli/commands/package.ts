@@ -4,9 +4,10 @@ import { parse } from 'yaml'
 import type { Command } from 'commander'
 import { parseManifest } from '../../core/manifest.js'
 import { loadPolicySets } from '../../core/policy.js'
+import { PilotError } from '../../core/errors.js'
 import type { RutterSource } from '../../core/source.js'
 
-/** 패키지 구조·schema·policy 검사. 반환: [errors, warnings] */
+/** 패키지 구조·schema·policy 검사 — errors가 있으면 CLI는 exit 1 */
 export function lintPackage(dir: string): { errors: string[]; warnings: string[]; infos: string[] } {
   const errors: string[] = []
   const warnings: string[] = []
@@ -16,7 +17,8 @@ export function lintPackage(dir: string): { errors: string[]; warnings: string[]
   try {
     source = { id: 'lint', kind: 'local', rootDir: dir, manifest: parseManifest(dir), priority: 0 }
   } catch (e) {
-    return { errors: [(e as Error).message], warnings, infos }
+    if (!(e instanceof PilotError)) throw e   // 예상 밖 버그는 lint 결과로 둔갑시키지 않는다
+    return { errors: [e.message], warnings, infos }
   }
   const m = source.manifest
 
@@ -39,7 +41,10 @@ export function lintPackage(dir: string): { errors: string[]; warnings: string[]
   try {
     const sets = loadPolicySets(source)
     infos.push(`PolicySet ${sets.length}개 · rule ${sets.reduce((n, s) => n + s.rules.length, 0)}개`)
-  } catch (e) { errors.push((e as Error).message) }
+  } catch (e) {
+    if (!(e instanceof PilotError)) throw e
+    errors.push(e.message)
+  }
 
   for (const [agent, cfg] of Object.entries(m.adapters)) {
     if (isAbsolute(cfg.output) || cfg.output.split(/[\\/]/).includes('..')) {

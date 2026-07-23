@@ -62,4 +62,19 @@ describe('parseSetFlag', () => {
     expect(parseSetFlag(['a.b=3', 'a.c=true', 'd=hello']))
       .toEqual({ a: { b: 3, c: true }, d: 'hello' })
   })
+  it('__proto__ 등 예약 키 경로를 거부한다 (prototype pollution 차단)', () => {
+    expect(() => parseSetFlag(['__proto__.polluted=yes'])).toThrow(/예약 키/)
+    expect(() => parseSetFlag(['a.constructor.x=1'])).toThrow(/예약 키/)
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined()
+  })
+})
+
+describe('mergeValues prototype pollution 방어', () => {
+  it('__proto__ own key가 있는 레이어를 병합해도 전역 prototype이 오염되지 않는다', () => {
+    const malicious = JSON.parse('{"__proto__": {"polluted": "yes"}, "ok": 1}')
+    const out = mergeValues([{ a: 1 }, malicious])
+    expect(out).toMatchObject({ a: 1, ok: 1 })
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined()
+    expect((out as Record<string, unknown>).polluted).toBeUndefined()
+  })
 })
