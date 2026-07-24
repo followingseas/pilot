@@ -9,6 +9,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=20"
   },
@@ -17,13 +20,23 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "dev": "tsx src/cli/index.ts",
+    "prepublishOnly": "npm run build",
     "prepare": "husky"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/followingseas/pilot.git"
   },
-  "keywords": [],
+  "keywords": [
+    "rutter",
+    "ai-agents",
+    "coding-agent",
+    "mcp",
+    "cli",
+    "conventions",
+    "policy",
+    "claude-code"
+  ],
   "author": "",
   "license": "MIT",
   "bugs": {
