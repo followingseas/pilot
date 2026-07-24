@@ -19,8 +19,6 @@ export interface AdapterInput {
   rutterName: string
   packageName?: string
   packageVersion?: string
-  releaseName?: string
-  revision?: number
   synthesis: SynthesisResult
   policySets: PolicySet[]
   adapters: AdaptersConfig
@@ -36,13 +34,12 @@ export function renderRulesMarkdown(rules: PolicyRule[]): string {
   return lines.join('\n')
 }
 
+// revision은 bookkeeping(release.yaml)이라 렌더 파일엔 넣지 않는다 — 매 apply마다 문서가 churn하는 것을 막는다.
+// 내용 출처는 package@version + digest로 충분하다
 function provenance(input: AdapterInput): string {
   const lines = ['## Source provenance']
   if (input.packageName) {
     lines.push(`- package: ${input.packageName}${input.packageVersion ? `@${input.packageVersion}` : ''}`)
-  }
-  if (input.releaseName !== undefined && input.revision !== undefined) {
-    lines.push(`- release: ${input.releaseName} · revision ${input.revision}`)
   }
   if (input.lockDigest) lines.push(`- digest: ${input.lockDigest}`)
   return lines.length > 1 ? lines.join('\n') : ''

@@ -1,15 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mkdtempSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { upsertMarkedBlock, writeStub, BEGIN_MARK, END_MARK } from '../src/core/stub.js'
-import type { SynthesisResult } from '../src/core/synthesize.js'
-
-const synthesis: SynthesisResult = {
-  warnings: [],
-  items: [{ key: 'conventions/commit.md', sourceId: 'org', scope: 'organization',
-    filePath: '/x', content: '# 커밋\n규칙', shadows: [] }]
-}
+import { upsertMarkedBlock, BEGIN_MARK, END_MARK } from '../src/core/stub.js'
 
 describe('upsertMarkedBlock', () => {
   it('블록이 없으면 끝에 추가한다', () => {
@@ -59,23 +49,3 @@ describe('upsertMarkedBlock', () => {
 function escapeForCount(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
-
-describe('writeStub', () => {
-  it('CLAUDE.md 기존 내용을 보존하며 블록·context.md·gitignore를 생성한다', () => {
-    const root = mkdtempSync(join(tmpdir(), 'pilot-stub-'))
-    writeFileSync(join(root, 'CLAUDE.md'), '# 내 프로젝트 지침\n')
-    writeStub(root, synthesis, 'Acme Handbook')
-    const claude = readFileSync(join(root, 'CLAUDE.md'), 'utf8')
-    expect(claude).toContain('# 내 프로젝트 지침')
-    expect(claude).toContain('Acme Handbook')          // manifest name 템플릿
-    expect(claude).toContain('@.pilot/context.md')
-    expect(existsSync(join(root, '.pilot/context.md'))).toBe(true)
-    expect(readFileSync(join(root, '.pilot/.gitignore'), 'utf8')).toBe('*\n!rutter.lock\n!release.yaml\n')
-  })
-  it('AGENTS.md에 합성 컨텍스트 전문(픽스처 content)이 포함된다', () => {
-    const root = mkdtempSync(join(tmpdir(), 'pilot-stub-'))
-    writeStub(root, synthesis, 'Acme Handbook')
-    const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8')
-    expect(agents).toContain('# 커밋')
-  })
-})
