@@ -34,12 +34,12 @@ describe('computeSourceDigest', () => {
     const dir = copyFixture()
     const before = computeSourceDigest(localSource(dir))
     writeFileSync(join(dir, 'policies', 'extra.yaml'),
-      'apiVersion: rutter.followingseas.dev/v1\nkind: PolicySet\nmetadata:\n  name: e\nspec:\n  rules: []\n')
+      'name: e\nrules: []\n')
     expect(computeSourceDigest(localSource(dir))).not.toBe(before)
   })
   it('git source는 캐시 HEAD sha를 쓴다', () => {
     const dir = mkdtempSync(join(tmpdir(), 'pilot-git-'))
-    writeFileSync(join(dir, 'rutter.yaml'), 'version: 1\nname: G\nscope: organization\n')
+    writeFileSync(join(dir, 'rutter.yaml'), 'name: G\nscope: organization\n')
     const env = { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' }
     execFileSync('git', ['init', '-b', 'main'], { cwd: dir })
     execFileSync('git', ['add', '.'], { cwd: dir })

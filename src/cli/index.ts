@@ -10,13 +10,12 @@ import { registerInit } from './commands/init.js'
 import { registerMcp } from './commands/mcp.js'
 import { registerRelease } from './commands/release.js'
 import { registerPackage } from './commands/package.js'
-import { registerMigrate } from './commands/migrate.js'
 import { PilotError } from '../core/errors.js'
 
 const program = new Command('pilot').description('Connect your rutter to AI coding agents')
 for (const reg of [registerInit, registerConnect, registerSync, registerStatus,
   registerDoctor, registerContext, registerSearch, registerMcp, registerRelease,
-  registerPackage, registerMigrate]) reg(program)
+  registerPackage]) reg(program)
 
 program.parseAsync().catch((e: unknown) => {
   if (e instanceof PilotError) {

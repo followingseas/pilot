@@ -10,7 +10,7 @@ const run = (args: string[], cwd: string) =>
 
 function makeRutter(): string {
   const r = mkdtempSync(join(tmpdir(), 'rutter-'))
-  writeFileSync(join(r, 'rutter.yaml'), 'version: 1\nname: Acme Handbook\nscope: organization\n')
+  writeFileSync(join(r, 'rutter.yaml'), 'name: Acme Handbook\nscope: organization\n')
   writeFileSync(join(r, 'rules.md'), '# 규칙\n내용')
   return r
 }

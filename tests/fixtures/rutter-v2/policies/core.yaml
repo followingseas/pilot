@@ -1,38 +1,33 @@
-apiVersion: rutter.followingseas.dev/v1
-kind: PolicySet
+name: org-core
+version: 1.0.0
 
-metadata:
-  name: org-core
-  version: 1.0.0
+appliesTo:
+  agents: [claude, codex, copilot, generic]
+  repositories: ["*"]
+  paths: ["**"]
 
-spec:
-  appliesTo:
-    agents: [claude, codex, copilot, generic]
-    repositories: ["*"]
-    paths: ["**"]
+rules:
+  - id: git.branch.naming
+    level: error
+    category: workflow
+    statement: "브랜치는 feature/<slug> 형식을 사용한다."
+    rationale: "리뷰·추적·자동화 분기를 일관되게 유지하기 위해서다."
+    examples:
+      valid:
+        - "feature/pilot-release-engine"
+      invalid:
+        - "my-branch"
+    checks:
+      - kind: regex
+        target: git.branch.name
+        pattern: "^feature/[a-z0-9._-]+$"
 
-  rules:
-    - id: git.branch.naming
-      level: error
-      category: workflow
-      statement: "브랜치는 feature/<slug> 형식을 사용한다."
-      rationale: "리뷰·추적·자동화 분기를 일관되게 유지하기 위해서다."
-      examples:
-        valid:
-          - "feature/pilot-release-engine"
-        invalid:
-          - "my-branch"
-      checks:
-        - kind: regex
-          target: git.branch.name
-          pattern: "^feature/[a-z0-9._-]+$"
-
-    - id: review.why.required
-      level: warn
-      category: documentation
-      statement: "중요한 규약 문서에는 Why를 반드시 적는다."
-      rationale: "사람과 AI가 같은 이유 체계를 공유해야 규약 준수율이 오른다."
-      checks:
-        - kind: markdown-heading-present
-          target: docs/**
-          heading: "Why"
+  - id: review.why.required
+    level: warn
+    category: documentation
+    statement: "중요한 규약 문서에는 Why를 반드시 적는다."
+    rationale: "사람과 AI가 같은 이유 체계를 공유해야 규약 준수율이 오른다."
+    checks:
+      - kind: markdown-heading-present
+        target: docs/**
+        heading: "Why"
