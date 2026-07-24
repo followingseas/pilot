@@ -25,6 +25,12 @@ export function runGit(args: string[], opts: { cwd: string }): string {
   return execFileSync('git', args, { cwd: opts.cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
 }
 
+/** relPath가 gitignore되는지 (git check-ignore: 무시=exit0, 아님=exit1). git repo 아니면 false */
+export function isGitIgnored(projectRoot: string, relPath: string): boolean {
+  try { runGit(['check-ignore', '-q', '--', relPath], { cwd: projectRoot }); return true }
+  catch { return false }
+}
+
 export function detectProject(cwd: string): { root: string; remote: string | null } | null {
   try {
     const root = runGit(['rev-parse', '--show-toplevel'], { cwd })

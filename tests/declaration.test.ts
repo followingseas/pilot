@@ -29,4 +29,17 @@ describe('declaration', () => {
     const approved = approveDeclaration(decl, baseConfig)
     expect(approved.connections[0]?.id).toBe('config-v2')
   })
+  it('같은 source가 다른 id로 이미 연결돼 있으면 connected로 보고 중복을 안 만든다', () => {
+    // 사용자가 pilot connect로 다른 id('followingseas')를 먼저 연결한 상황
+    const config: PilotConfig = {
+      ...baseConfig,
+      connections: [{ id: 'followingseas', kind: 'git', location: 'https://github.com/acme/handbook.git' }]
+    }
+    const decl = { source: 'https://github.com/acme/handbook' } // .git 유무·정규화 무관하게 같은 위치
+    expect(declarationStatus(decl, config)).toBe('connected')
+    const approved = approveDeclaration(decl, config)
+    expect(approved.connections).toHaveLength(1)          // 중복 connection 없음
+    expect(approved.connections[0]?.id).toBe('followingseas')
+    expect(approved.approvedDeclarations).toContain('github.com/acme/handbook')
+  })
 })

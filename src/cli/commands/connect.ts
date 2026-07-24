@@ -3,7 +3,9 @@ import type { Command } from 'commander'
 import { loadConfig, saveConfig, type Connection } from '../../core/config.js'
 import { loadSource, cloneSource } from '../../core/source.js'
 import { PilotError } from '../../core/errors.js'
-import { isGitUrl, hasEmbeddedCredentials, redactCredentials } from '../../core/git.js'
+import { isGitUrl, hasEmbeddedCredentials, redactCredentials, normalizeRemoteUrl } from '../../core/git.js'
+
+const locationKey = (l: string): string => isGitUrl(l) ? normalizeRemoteUrl(l) : resolve(l)
 
 export function registerConnect(program: Command): void {
   program.command('connect')
@@ -28,6 +30,11 @@ export function registerConnect(program: Command): void {
       loadSource(conn) // manifest 파싱 확인 — 실패하면 여기서 throw되어 config에 저장되지 않는다
 
       const config = loadConfig()
+      // 같은 source가 다른 id로 이미 연결돼 있으면 경고 — 중복 연결은 합성에서 충돌을 일으킨다
+      const dup = config.connections.find(c => c.id !== conn.id && locationKey(c.location) === locationKey(conn.location))
+      if (dup) {
+        console.error(`경고: 같은 source가 이미 '${dup.id}'로 연결돼 있습니다 — 중복 연결은 합성 충돌을 일으킬 수 있습니다 (pilot disconnect ${dup.id} 로 정리 가능)`)
+      }
       config.connections = [...config.connections.filter(c => c.id !== conn.id), conn]
       saveConfig(config)
 
