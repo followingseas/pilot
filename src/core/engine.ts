@@ -112,7 +112,7 @@ export function resolveRelease(cwd: string, opts: ResolveReleaseOptions): Resolv
     // 읽기 전용 loadAll과 달리 release 경로에서는 치명적 — 일부 source가 빠진 채
     // 합성·lock이 만들어지면 잘못된 패키지가 조용히 배포될 수 있다
     throw new PilotError(`source 로드 실패:\n  ${loadFailures.join('\n  ')}`,
-      'pilot sync <id> 로 캐시를 복구하거나 pilot connect 설정을 확인하세요')
+      '캐시가 오래된 포맷이거나 손상됐을 수 있습니다 — pilot sync <id> 로 갱신하거나, 중복·불필요한 연결이면 pilot disconnect <id> 로 정리하세요')
   }
   const local = loadProjectSource(projectRoot)
   if (local) base.push(local)

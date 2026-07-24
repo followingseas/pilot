@@ -1,6 +1,6 @@
 import { mkdirSync, existsSync, statSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { detectProject } from './git.js'
+import { detectProject, isGitIgnored } from './git.js'
 import { resolveRelease, type ResolvedRelease } from './engine.js'
 import { applyArtifacts, removeStaleArtifacts, type RenderedArtifact } from './adapters.js'
 import { writeLock, readLock, type RutterLock } from './lock.js'
@@ -123,7 +123,15 @@ export function applyRelease(cwd: string, opts: ApplyOptions): ApplyResult {
       const { written, removed } = commitRelease(
         resolved.projectRoot, release, resolved.artifacts, resolved.values, resolved.lock,
         prev ? prev.artifacts.map(a => a.path) : null)
-      return { release, written, removed, warnings: resolved.warnings, revision, created: !prev }
+      // 공유돼야 할 산출물(.pilot/ 밖)이 gitignore되면 팀에 규약이 안 퍼진다 — 경고
+      const shareWarnings = written
+        .filter(p => !p.startsWith('.pilot/') && isGitIgnored(detected.root, p))
+        .map(p => `'${p}'가 gitignore되어 커밋·공유되지 않습니다 — 팀에 규약을 공유하려면 gitignore에서 제외하세요`)
+      return {
+        release, written, removed,
+        warnings: [...resolved.warnings, ...shareWarnings],
+        revision, created: !prev
+      }
     } catch (e) {
       throw new PilotError(
         `적용 중 실패 — 프로젝트 파일이 부분적으로 갱신되었을 수 있습니다: ${(e as Error).message}`,

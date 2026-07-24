@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeRemoteUrl, detectProject } from '../src/core/git.js'
-import { mkdtempSync } from 'node:fs'
+import { normalizeRemoteUrl, detectProject, isGitIgnored } from '../src/core/git.js'
+import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { execFileSync } from 'node:child_process'
@@ -26,5 +26,18 @@ describe('detectProject', () => {
   })
   it('git repo가 아니면 null', () => {
     expect(detectProject(tmpdir())).toBeNull()
+  })
+})
+
+describe('isGitIgnored', () => {
+  it('gitignore된 파일은 true, 아닌 파일은 false', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'pilot-ign-'))
+    execFileSync('git', ['init', '-b', 'main'], { cwd: dir })
+    writeFileSync(join(dir, '.gitignore'), 'CLAUDE.md\n')
+    expect(isGitIgnored(dir, 'CLAUDE.md')).toBe(true)
+    expect(isGitIgnored(dir, 'AGENTS.md')).toBe(false)
+  })
+  it('git repo가 아니면 false', () => {
+    expect(isGitIgnored(mkdtempSync(join(tmpdir(), 'pilot-ign-')), 'x')).toBe(false)
   })
 })

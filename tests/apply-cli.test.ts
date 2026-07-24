@@ -1,15 +1,21 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, existsSync, cpSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { parse } from 'yaml'
 
 const FIXTURE_PKG = new URL('./fixtures/rutter-v2', import.meta.url).pathname
+const CLI = join(process.cwd(), 'src/cli/index.ts')
 
 let env: NodeJS.ProcessEnv
 const run = (args: string[], cwd: string) =>
-  execFileSync('npx', ['tsx', join(process.cwd(), 'src/cli/index.ts'), ...args], { encoding: 'utf8', env, cwd })
+  execFileSync('npx', ['tsx', CLI, ...args], { encoding: 'utf8', env, cwd })
+// stdout+stderr 함께 캡처 (경고는 stderr로 나간다)
+const runOut = (args: string[], cwd: string): string => {
+  const r = spawnSync('npx', ['tsx', CLI, ...args], { encoding: 'utf8', env, cwd })
+  return (r.stdout ?? '') + (r.stderr ?? '')
+}
 const runFail = (args: string[], cwd: string): string => {
   try { run(args, cwd); throw new Error('실패해야 하는 명령이 성공함') }
   catch (e) { return String((e as { stderr?: string }).stderr ?? e) }
@@ -183,6 +189,18 @@ describe('pilot apply', () => {
     expect(readFileSync(join(proj, '.pilot/context.md'), 'utf8')).toContain('DEP git 규칙')
     const historyValues = parse(readFileSync(join(proj, '.pilot/history/1/values.yaml'), 'utf8'))
     expect(historyValues.values.git.flow).toBe('github-flow')
+  })
+
+  it('disconnect: 연결을 제거하면 apply가 더 이상 되지 않는다', () => {
+    expect(run(['disconnect', 'pkg'], proj)).toContain('연결 해제됨')
+    expect(runFail(['apply'], proj)).toContain('연결된 rutter가 없습니다')
+  })
+
+  it('공유 산출물이 gitignore되면 경고한다', () => {
+    writeFileSync(join(proj, '.gitignore'), 'CLAUDE.md\n')
+    const out = runOut(['apply'], proj)
+    expect(out).toContain('CLAUDE.md')
+    expect(out).toContain('gitignore되어')
   })
 
   it('apply.lock이 있으면 동시 실행을 거부한다', () => {

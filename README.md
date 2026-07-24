@@ -76,6 +76,7 @@ pilot search "커밋 메시지"  # 합성된 문서 전문 검색
 | `pilot rollback --to-revision <n>` | 해당 revision의 산출물·lock 복원 (새 revision으로 기록) |
 | `pilot history` | revision 목록 |
 | `pilot connect <location> --id <id> [--priority <n>]` | rutter source를 전역 설정에 직접 연결 (로컬 경로 또는 git URL) |
+| `pilot disconnect <id> [--keep-cache]` | 연결된 source를 전역 설정에서 제거 (git 캐시도 삭제) |
 | `pilot sync [id]` | git source를 최신 커밋으로 갱신 (생략 시 전체 git source) |
 | `pilot status` | 연결된 source 목록과 마지막 동기화 시각 |
 | `pilot doctor [--cwd <path>] [--json]` | source 로드 실패, 캐시 TTL 초과, 섀도잉 경고, 충돌을 진단 |

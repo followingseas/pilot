@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander'
 import { registerConnect } from './commands/connect.js'
+import { registerDisconnect } from './commands/disconnect.js'
 import { registerStatus } from './commands/status.js'
 import { registerContext } from './commands/context.js'
 import { registerSearch } from './commands/search.js'
@@ -13,7 +14,7 @@ import { registerPackage } from './commands/package.js'
 import { PilotError } from '../core/errors.js'
 
 const program = new Command('pilot').description('Connect your rutter to AI coding agents')
-for (const reg of [registerInit, registerConnect, registerSync, registerStatus,
+for (const reg of [registerInit, registerConnect, registerDisconnect, registerSync, registerStatus,
   registerDoctor, registerContext, registerSearch, registerMcp, registerApply,
   registerPackage]) reg(program)
 
