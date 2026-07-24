@@ -103,7 +103,7 @@ describe('mcp server', () => {
   it('pilot_resolve_release — 미설치면 installed:false, 설치면 revision·lock 해석 반환', async () => {
     const { writeRelease } = await import('../src/core/release.js')
     const { writeLock } = await import('../src/core/lock.js')
-    const { V2_API_VERSION } = await import('../src/core/manifest.js')
+    const { API_VERSION } = await import('../src/core/manifest.js')
     const proj = mkdtempSync(join(tmpdir(), 'proj-'))
 
     const server = createServer()
@@ -116,14 +116,14 @@ describe('mcp server', () => {
     expect(JSON.parse((empty.content as { text: string }[])[0]!.text).installed).toBe(false)
 
     writeRelease(proj, {
-      apiVersion: V2_API_VERSION, kind: 'Release',
+      apiVersion: API_VERSION, kind: 'Release',
       metadata: { name: 'payment-api', revision: 7, status: 'deployed' },
       spec: { package: { name: 'acme-core', version: '2.0.0' }, lockFile: '.pilot/rutter.lock', adapters: ['claude'] },
       artifacts: [{ path: 'CLAUDE.md', sha256: 'aa' }],
       history: { previousRevision: 6 }
     })
     writeLock(proj, {
-      apiVersion: V2_API_VERSION, kind: 'Lock',
+      apiVersion: API_VERSION, kind: 'Lock',
       release: { name: 'payment-api', package: 'acme-core', version: '2.0.0', revision: 7 },
       resolved: { sources: [{ id: 's', kind: 'local', location: '/x', digest: 'sha256:aa' }], dependencies: [] },
       values: { files: [], effectiveDigest: 'sha256:bb' },

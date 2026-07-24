@@ -6,11 +6,11 @@ import {
   readRelease, writeRelease, saveHistory, listHistory, loadHistoryArtifacts,
   loadHistoryValues, loadHistoryRelease, type PilotRelease
 } from '../src/core/release.js'
-import { V2_API_VERSION } from '../src/core/manifest.js'
+import { API_VERSION } from '../src/core/manifest.js'
 import type { RenderedArtifact } from '../src/core/adapters.js'
 
 const release = (revision: number): PilotRelease => ({
-  apiVersion: V2_API_VERSION,
+  apiVersion: API_VERSION,
   kind: 'Release',
   metadata: { name: 'payment-api', revision, status: 'deployed' },
   spec: { package: { name: 'acme-core', version: '2.0.0' }, lockFile: '.pilot/rutter.lock', adapters: ['claude', 'codex'] },

@@ -63,7 +63,7 @@ describe('parseManifest v2', () => {
   it('metadata.version이 없으면 원인 필드를 알려준다', () => {
     const dir = mkdtempSync(join(tmpdir(), 'pilot-'))
     writeFileSync(join(dir, 'rutter.yaml'), [
-      'apiVersion: rutter.followingseas.dev/v2alpha1', 'kind: Package',
+      'apiVersion: rutter.followingseas.dev/v1', 'kind: Package',
       'metadata:', '  name: x', 'package:', '  scope: organization'
     ].join('\n'))
     expect(() => parseManifest(dir)).toThrow(/version/)
@@ -71,7 +71,7 @@ describe('parseManifest v2', () => {
   it('library 타입을 인식한다', () => {
     const dir = mkdtempSync(join(tmpdir(), 'pilot-'))
     writeFileSync(join(dir, 'rutter.yaml'), [
-      'apiVersion: rutter.followingseas.dev/v2alpha1', 'kind: Package',
+      'apiVersion: rutter.followingseas.dev/v1', 'kind: Package',
       'metadata:', '  name: lib', '  version: 1.0.0',
       'package:', '  type: library', '  scope: organization'
     ].join('\n'))
@@ -81,7 +81,7 @@ describe('parseManifest v2', () => {
     for (const bad of ['../탈출.md', '/etc/passwd', 'a/../../b.md']) {
       const dir = mkdtempSync(join(tmpdir(), 'pilot-'))
       writeFileSync(join(dir, 'rutter.yaml'), [
-        'apiVersion: rutter.followingseas.dev/v2alpha1', 'kind: Package',
+        'apiVersion: rutter.followingseas.dev/v1', 'kind: Package',
         'metadata:', '  name: x', '  version: 1.0.0',
         'package:', '  scope: organization',
         'adapters:', '  codex:', `    output: "${bad}"`
@@ -92,7 +92,7 @@ describe('parseManifest v2', () => {
   it('policiesDir·defaultsFile의 상위 탈출을 거부한다', () => {
     const dir = mkdtempSync(join(tmpdir(), 'pilot-'))
     writeFileSync(join(dir, 'rutter.yaml'), [
-      'apiVersion: rutter.followingseas.dev/v2alpha1', 'kind: Package',
+      'apiVersion: rutter.followingseas.dev/v1', 'kind: Package',
       'metadata:', '  name: x', '  version: 1.0.0',
       'package:', '  scope: organization',
       'values:', '  defaultsFile: ../../secrets.yaml'
@@ -102,7 +102,7 @@ describe('parseManifest v2', () => {
   it('dependencies 선언을 파싱한다', () => {
     const dir = mkdtempSync(join(tmpdir(), 'pilot-'))
     writeFileSync(join(dir, 'rutter.yaml'), [
-      'apiVersion: rutter.followingseas.dev/v2alpha1', 'kind: Package',
+      'apiVersion: rutter.followingseas.dev/v1', 'kind: Package',
       'metadata:', '  name: x', '  version: 1.0.0',
       'package:', '  scope: organization',
       'dependencies:', '  - name: shared-git', '    version: 1.4.0', '    repository: /tmp/shared-git'

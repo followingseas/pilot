@@ -7,7 +7,7 @@ import {
   loadHistoryArtifacts, loadHistoryValues, loadHistoryRelease, loadHistoryLock, type PilotRelease
 } from '../../core/release.js'
 import { checkLockedFields } from '../../core/values.js'
-import { V2_API_VERSION } from '../../core/manifest.js'
+import { API_VERSION } from '../../core/manifest.js'
 import { detectProject } from '../../core/git.js'
 import { PilotError } from '../../core/errors.js'
 
@@ -39,7 +39,7 @@ function buildReleaseState(
   name: string, revision: number, previousRevision: number | null, resolved: ResolvedRelease
 ): PilotRelease {
   return {
-    apiVersion: V2_API_VERSION,
+    apiVersion: API_VERSION,
     kind: 'Release',
     metadata: { name, revision, status: 'deployed', generatedAt: new Date().toISOString() },
     spec: {

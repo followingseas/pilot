@@ -98,7 +98,7 @@ describe('pilot release', () => {
   it('library 패키지는 install 거부', () => {
     const lib = mkdtempSync(join(tmpdir(), 'lib-'))
     writeFileSync(join(lib, 'rutter.yaml'), [
-      'apiVersion: rutter.followingseas.dev/v2alpha1', 'kind: Package',
+      'apiVersion: rutter.followingseas.dev/v1', 'kind: Package',
       'metadata:', '  name: lib', '  version: 1.0.0',
       'package:', '  type: library', '  scope: organization'
     ].join('\n'))
@@ -173,7 +173,7 @@ describe('pilot release', () => {
     const dep = join(pkgDir, 'vendor', 'shared-git')
     mkdirSync(join(dep, 'docs'), { recursive: true })
     writeFileSync(join(dep, 'rutter.yaml'), [
-      'apiVersion: rutter.followingseas.dev/v2alpha1', 'kind: Package',
+      'apiVersion: rutter.followingseas.dev/v1', 'kind: Package',
       'metadata:', '  name: shared-git', '  version: 1.4.2',
       'package:', '  type: library', '  scope: organization',
       'sources:', '  docs:', '    conventions: docs',

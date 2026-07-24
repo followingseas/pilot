@@ -5,7 +5,7 @@ import { z } from 'zod'
 import type { RutterSource } from './source.js'
 import { resolveWithin } from './paths.js'
 import { PilotError } from './errors.js'
-import { V2_API_VERSION } from './manifest.js'
+import { API_VERSION } from './manifest.js'
 
 export const RULE_LEVELS = ['error', 'warn', 'info'] as const
 export type RuleLevel = (typeof RULE_LEVELS)[number]
@@ -34,7 +34,7 @@ const ruleSchema = z.object({
 export type PolicyRule = z.infer<typeof ruleSchema>
 
 const policySetSchema = z.looseObject({
-  apiVersion: z.literal(V2_API_VERSION),
+  apiVersion: z.literal(API_VERSION),
   kind: z.literal('PolicySet'),
   metadata: z.object({
     name: z.string().min(1),

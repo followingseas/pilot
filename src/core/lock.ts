@@ -6,12 +6,12 @@ import type { RutterSource } from './source.js'
 import { synthesize } from './synthesize.js'
 import { digestItems } from './digest.js'
 import { runGit, redactCredentials } from './git.js'
-import { V2_API_VERSION } from './manifest.js'
+import { API_VERSION } from './manifest.js'
 import { resolveWithin } from './paths.js'
 import { PilotError } from './errors.js'
 
 const lockSchema = z.object({
-  apiVersion: z.literal(V2_API_VERSION),
+  apiVersion: z.literal(API_VERSION),
   kind: z.literal('Lock'),
   release: z.object({
     name: z.string(),
@@ -87,7 +87,7 @@ export interface BuildLockInput {
 
 export function buildLock(input: BuildLockInput): RutterLock {
   return {
-    apiVersion: V2_API_VERSION,
+    apiVersion: API_VERSION,
     kind: 'Lock',
     release: {
       name: input.releaseName, package: input.pkg.name,
