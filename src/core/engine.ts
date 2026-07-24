@@ -18,10 +18,13 @@ export interface ResolveReleaseOptions {
   valuesFiles?: string[]
   set?: string[]
   revision: number
+  /** 릴리스 인스턴스 이름 — 생략 시 패키지 이름을 쓴다 */
+  releaseName?: string
 }
 
 export interface ResolvedRelease {
   projectRoot: string
+  releaseName: string
   pkg: RutterSource
   sources: RutterSource[]
   synthesis: SynthesisResult
@@ -91,9 +94,9 @@ const sourceLocation = (s: RutterSource, config: PilotConfig): string =>
 /**
  * 릴리스 파이프라인의 순수 해석 단계: sources+deps 로드 → 합성 → policy IR →
  * values 계층 병합(dep defaults → pkg defaults → files → --set) → adapter 렌더 → lock 계산.
- * 프로젝트 파일은 쓰지 않는다 — 단, git dependency는 source 캐시에 clone될 수 있다(template/install/upgrade가 공유).
+ * 프로젝트 파일은 쓰지 않는다 — 단, git dependency는 source 캐시에 clone될 수 있다(apply/diff가 공유).
  */
-export function resolveRelease(cwd: string, releaseName: string, opts: ResolveReleaseOptions): ResolvedRelease {
+export function resolveRelease(cwd: string, opts: ResolveReleaseOptions): ResolvedRelease {
   const detected = detectProject(cwd)
   if (!detected) throw new PilotError('git 프로젝트가 아닙니다', 'git repo 루트에서 실행하세요')
   const projectRoot = detected.root
@@ -117,9 +120,10 @@ export function resolveRelease(cwd: string, releaseName: string, opts: ResolveRe
 
   const pkg = pickPackageSource(base, config, projectRoot)
   if (pkg.manifest.packageType === 'library') {
-    throw new PilotError(`'${pkg.manifest.name}'은 library 패키지라 단독 release할 수 없습니다`,
+    throw new PilotError(`'${pkg.manifest.name}'은 library 패키지라 단독 적용할 수 없습니다`,
       'application 패키지의 dependency로 사용하세요')
   }
+  const releaseName = opts.releaseName ?? pkg.manifest.name
 
   const dependencies = resolveDependencies(pkg)
   const sources = [...dependencies.map(d => d.source), ...base]
@@ -156,14 +160,13 @@ export function resolveRelease(cwd: string, releaseName: string, opts: ResolveRe
   const artifacts = renderArtifacts({
     rutterName: pkg.manifest.name,
     packageName: pkg.manifest.name, packageVersion: pkg.manifest.version,
-    releaseName, revision: opts.revision,
     synthesis, policySets,
     adapters: pkg.manifest.adapters,
     lockDigest: pkgDigest
   })
 
   return {
-    projectRoot, pkg, sources, synthesis, policySets,
+    projectRoot, releaseName, pkg, sources, synthesis, policySets,
     values, valuesDigest, valuesFiles, lockedFields, dependencies, artifacts, lock,
     warnings: [...synthesis.warnings, ...dependencies.flatMap(d => d.warnings)]
   }

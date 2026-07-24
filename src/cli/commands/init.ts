@@ -4,12 +4,12 @@ import { loadConfig, saveConfig } from '../../core/config.js'
 import { readDeclaration, writeDeclaration, declarationStatus, approveDeclaration } from '../../core/declaration.js'
 import { detectProject, hasEmbeddedCredentials, isGitUrl } from '../../core/git.js'
 import { cloneSource, loadSource } from '../../core/source.js'
-import { writeStub } from '../../core/stub.js'
-import { loadAll } from '../load.js'
+import { applyRelease } from '../../core/apply.js'
 import { PilotError } from '../../core/errors.js'
 
 export function registerInit(program: Command): void {
   program.command('init')
+    .description('프로젝트 온보딩 — 선언 생성/승인 후 rutter를 적용(apply)한다')
     .option('--source <location>', '연결할 rutter (git URL 또는 로컬 경로)')
     .option('--yes', '승인 프롬프트 생략')
     .action(async (opts: { source?: string; yes?: boolean }) => {
@@ -36,9 +36,7 @@ export function registerInit(program: Command): void {
         decl = { source: opts.source }
         console.log('✓ .rutter.yaml 생성')
       }
-      // 방금 승인/연결한 source의 id — 스텁 문구에 그 manifest name을 우선 사용하기 위함
-      // (sources 배열의 순서는 합성 강도순이 아닐 수 있어 sources[0]만으로는 의도한 소스가 아닐 수 있다)
-      let connectedId: string | null = null
+
       if (declarationStatus(decl, config) === 'needs-approval') {
         const ok = opts.yes || await confirm({ message: `'${decl.source}' rutter를 연결할까요?` })
         if (!ok) throw new PilotError('연결이 승인되지 않았습니다')
@@ -47,12 +45,11 @@ export function registerInit(program: Command): void {
         if (conn.kind === 'git') cloneSource(conn)
         loadSource(conn) // manifest 파싱 확인 — 실패하면 여기서 throw되어 config에 저장되지 않는다
         saveConfig(config)
-        connectedId = conn.id
         console.log(`✓ '${conn.id}' 연결됨`)
       }
-      const { sources, synthesis } = loadAll(detected.root)
-      const name = sources.find(s => s.id === connectedId)?.manifest.name ?? sources[0]?.manifest.name ?? 'rutter'
-      const { written } = writeStub(detected.root, synthesis, name)
-      console.log(`✓ 스텁 갱신: ${written.join(', ')}`)
+
+      // 온보딩 후 apply와 동일한 렌더 파이프라인을 탄다 — init과 apply가 같은 산출물을 낸다
+      const result = applyRelease(process.cwd(), {})
+      console.log(`✓ 적용: ${result.written.join(', ')}`)
     })
 }

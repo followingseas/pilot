@@ -20,7 +20,6 @@ const policySets: PolicySet[] = [{
 const input = (over: Partial<AdapterInput> = {}): AdapterInput => ({
   rutterName: 'acme-core',
   packageName: 'acme-core', packageVersion: '2.0.0',
-  releaseName: 'payment-api', revision: 3,
   synthesis: {
     items: [{ key: 'docs/a.md', scope: 'organization', sourceId: 's', filePath: '/x', content: '# A', shadows: [] }],
     warnings: []
@@ -55,8 +54,8 @@ describe('renderArtifacts', () => {
     const claude = renderArtifacts(input()).find(a => a.path === 'CLAUDE.md')!
     expect(claude.block).toContain('@.pilot/context.md')
     expect(claude.block).toContain('- package: acme-core@2.0.0')
-    expect(claude.block).toContain('- release: payment-api · revision 3')
     expect(claude.block).toContain('- digest: sha256:abc')
+    expect(claude.block).not.toContain('revision')   // revision은 렌더 파일에 넣지 않는다
     expect(claude.block).toContain('- [error] 브랜치는')
   })
   it('agent 전용 PolicySet은 다른 표면에 새지 않는다', () => {
