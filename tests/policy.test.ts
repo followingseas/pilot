@@ -36,6 +36,15 @@ describe('loadPolicySets', () => {
       'name: bad\nrules:\n  - id: a\n    statement: s\n')
     expect(() => loadPolicySets(asSource(dir))).toThrow(/level/)
   })
+  it('PolicySet 최상위 오타 키는 거부된다 (fail-closed)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'pilot-'))
+    writeFileSync(join(dir, 'rutter.yaml'), PKG_HEAD)
+    mkdirSync(join(dir, 'policies'))
+    // appliesTo 오타 → 조용히 기본값으로 떨어지면 안 되고 파싱 실패해야 한다
+    writeFileSync(join(dir, 'policies', 'typo.yaml'),
+      'name: t\nappliesToo:\n  agents: [claude]\nrules:\n  - id: t.rule\n    level: info\n    statement: s\n')
+    expect(() => loadPolicySets(asSource(dir))).toThrow()
+  })
   it('rule id가 중복이면 실패한다', () => {
     const dir = mkdtempSync(join(tmpdir(), 'pilot-'))
     writeFileSync(join(dir, 'rutter.yaml'), PKG_HEAD)

@@ -55,7 +55,7 @@ describe('renderArtifacts', () => {
     expect(claude.block).toContain('@.pilot/context.md')
     expect(claude.block).toContain('- package: acme-core@2.0.0')
     expect(claude.block).toContain('- digest: sha256:abc')
-    expect(claude.block).not.toContain('revision')   // revision은 렌더 파일에 넣지 않는다
+    expect(claude.block).not.toContain('- release:')   // revision 담긴 release 라인은 렌더하지 않는다
     expect(claude.block).toContain('- [error] 브랜치는')
   })
   it('agent 전용 PolicySet은 다른 표면에 새지 않는다', () => {
