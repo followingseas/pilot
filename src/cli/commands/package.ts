@@ -22,14 +22,9 @@ export function lintPackage(dir: string): { errors: string[]; warnings: string[]
   }
   const m = source.manifest
 
-  if (m.formatVersion === 1) {
-    warnings.push('legacy v1 manifest입니다 — pilot migrate package 로 v2 전환을 권장합니다')
-    return { errors, warnings, infos }
-  }
-
   if (m.defaultsFile) {
     const abs = join(dir, m.defaultsFile)
-    if (!existsSync(abs)) errors.push(`values.defaultsFile '${m.defaultsFile}'이 없습니다`)
+    if (!existsSync(abs)) errors.push(`defaults '${m.defaultsFile}'이 없습니다`)
     else {
       try {
         const parsed = parse(readFileSync(abs, 'utf8'))
@@ -55,8 +50,8 @@ export function lintPackage(dir: string): { errors: string[]; warnings: string[]
   }
 
   for (const [rel, label] of [
-    [m.paths.conventions, 'sources.docs.conventions'],
-    [m.paths.charts, 'sources.docs.maps']
+    [m.paths.conventions, 'docs.conventions'],
+    [m.paths.charts, 'docs.maps']
   ] as const) {
     if (rel && !existsSync(join(dir, rel))) warnings.push(`${label} 디렉터리 '${rel}'이 없습니다`)
   }

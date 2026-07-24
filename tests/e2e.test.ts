@@ -18,7 +18,7 @@ it('E2E: 온보딩 → 섀도잉 합성 → 팀원 재현', () => {
   // org rutter (git remote 역할)
   const org = mkdtempSync(join(tmpdir(), 'org-'))
   writeFileSync(join(org, 'rutter.yaml'),
-    'version: 1\nname: Org Handbook\nscope: organization\npaths:\n  conventions: conventions\n')
+    'name: Org Handbook\nscope: organization\ndocs:\n  conventions: conventions\n')
   mkdirSync(join(org, 'conventions'))
   writeFileSync(join(org, 'conventions/commit.md'), '# ORG 커밋 규칙')
   for (const args of [['init', '-b', 'main'], ['add', '-A'],
@@ -30,7 +30,7 @@ it('E2E: 온보딩 → 섀도잉 합성 → 팀원 재현', () => {
   execFileSync('git', ['init', '-b', 'main'], { cwd: proj })
   mkdirSync(join(proj, '.rutter/conventions'), { recursive: true })
   writeFileSync(join(proj, '.rutter/rutter.yaml'),
-    'version: 1\nname: Proj Local\nscope: project-local\npaths:\n  conventions: conventions\n')
+    'name: Proj Local\nscope: project-local\ndocs:\n  conventions: conventions\n')
   writeFileSync(join(proj, '.rutter/conventions/commit.md'), '# PROJ 커밋 규칙')
 
   run(['init', '--source', org, '--yes'], proj)

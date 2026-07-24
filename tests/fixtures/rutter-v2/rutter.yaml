@@ -1,28 +1,19 @@
-apiVersion: rutter.followingseas.dev/v1
-kind: Package
+name: acme-core
+version: 2.0.0
+scope: organization
+type: application
 
-metadata:
-  name: acme-core
-  version: 2.0.0
-  description: Acme shared policy package
-
-package:
-  type: application
-  scope: organization
-
-sources:
-  docs:
-    conventions: docs/conventions
-    maps: docs/maps
-  policies:
-    dir: policies
+docs:
+  conventions: docs/conventions
+  maps: docs/maps
+policies: policies
+defaults: defaults.yaml
 
 repositories:
   - id: payment-api
     remote: https://github.com/acme/payment-api
 
 values:
-  defaultsFile: defaults.yaml
   merge:
     overrides:
       - path: /policies/rules

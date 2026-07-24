@@ -21,7 +21,7 @@ describe('pilot CLI', () => {
   it('connect(local) → context --json에 합성 결과가 나온다', () => {
     const rutter = mkdtempSync(join(tmpdir(), 'rutter-'))
     writeFileSync(join(rutter, 'rutter.yaml'),
-      'version: 1\nname: T Handbook\nscope: organization\npaths:\n  conventions: conventions\n')
+      'name: T Handbook\nscope: organization\ndocs:\n  conventions: conventions\n')
     mkdirSync(join(rutter, 'conventions'))
     writeFileSync(join(rutter, 'conventions/commit.md'), '# 커밋\n규칙')
     run(['connect', rutter, '--id', 't'])
@@ -30,7 +30,7 @@ describe('pilot CLI', () => {
   })
   it('search가 스니펫을 반환한다', () => {
     const rutter = mkdtempSync(join(tmpdir(), 'rutter-'))
-    writeFileSync(join(rutter, 'rutter.yaml'), 'version: 1\nname: T\nscope: organization\n')
+    writeFileSync(join(rutter, 'rutter.yaml'), 'name: T\nscope: organization\n')
     writeFileSync(join(rutter, 'commit.md'), '# 커밋 규칙\nBREAKING CHANGE 대문자')
     run(['connect', rutter, '--id', 't'])
     const out = JSON.parse(run(['search', 'BREAKING', '--json']))

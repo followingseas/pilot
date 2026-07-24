@@ -15,7 +15,7 @@ beforeEach(() => {
 describe('mcp server', () => {
   it('pilot_get_context가 합성 결과를 반환한다', async () => {
     const rutter = mkdtempSync(join(tmpdir(), 'rutter-'))
-    writeFileSync(join(rutter, 'rutter.yaml'), 'version: 1\nname: T\nscope: organization\n')
+    writeFileSync(join(rutter, 'rutter.yaml'), 'name: T\nscope: organization\n')
     writeFileSync(join(rutter, 'rules.md'), '# 규칙')
     const c = loadConfig()
     c.connections.push({ id: 't', kind: 'local', location: rutter, priority: 0 })
@@ -38,7 +38,7 @@ describe('mcp server', () => {
 
   it('pilot_search_knowledge가 문서를 검색한다', async () => {
     const rutter = mkdtempSync(join(tmpdir(), 'rutter-'))
-    writeFileSync(join(rutter, 'rutter.yaml'), 'version: 1\nname: T\nscope: organization\n')
+    writeFileSync(join(rutter, 'rutter.yaml'), 'name: T\nscope: organization\n')
     writeFileSync(join(rutter, 'rules.md'), '# 규칙\n\n규칙에 따릅니다')
     const c = loadConfig()
     c.connections.push({ id: 't', kind: 'local', location: rutter, priority: 0 })
@@ -59,7 +59,7 @@ describe('mcp server', () => {
 
   it('pilot_list_sources가 연결된 소스 목록을 반환한다', async () => {
     const rutter = mkdtempSync(join(tmpdir(), 'rutter-'))
-    writeFileSync(join(rutter, 'rutter.yaml'), 'version: 1\nname: T\nscope: organization\n')
+    writeFileSync(join(rutter, 'rutter.yaml'), 'name: T\nscope: organization\n')
     writeFileSync(join(rutter, 'rules.md'), '# 규칙')
     const c = loadConfig()
     c.connections.push({ id: 't', kind: 'local', location: rutter, priority: 0 })
@@ -80,7 +80,7 @@ describe('mcp server', () => {
 
   it('pilot_doctor가 소스 상태를 진단한다', async () => {
     const rutter = mkdtempSync(join(tmpdir(), 'rutter-'))
-    writeFileSync(join(rutter, 'rutter.yaml'), 'version: 1\nname: T\nscope: organization\n')
+    writeFileSync(join(rutter, 'rutter.yaml'), 'name: T\nscope: organization\n')
     writeFileSync(join(rutter, 'rules.md'), '# 규칙')
     const c = loadConfig()
     c.connections.push({ id: 't', kind: 'local', location: rutter, priority: 0 })

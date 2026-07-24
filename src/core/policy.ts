@@ -5,7 +5,6 @@ import { z } from 'zod'
 import type { RutterSource } from './source.js'
 import { resolveWithin } from './paths.js'
 import { PilotError } from './errors.js'
-import { API_VERSION } from './manifest.js'
 
 export const RULE_LEVELS = ['error', 'warn', 'info'] as const
 export type RuleLevel = (typeof RULE_LEVELS)[number]
@@ -33,21 +32,17 @@ const ruleSchema = z.object({
 })
 export type PolicyRule = z.infer<typeof ruleSchema>
 
+// 평면 PolicySet — 매니페스트와 같은 스타일. policies/ 디렉터리가 이미 종류를 알려주므로
+// apiVersion·kind 없이 name/appliesTo/rules를 최상위에 둔다
 const policySetSchema = z.looseObject({
-  apiVersion: z.literal(API_VERSION),
-  kind: z.literal('PolicySet'),
-  metadata: z.object({
-    name: z.string().min(1),
-    version: z.string().optional()
-  }),
-  spec: z.object({
-    appliesTo: z.object({
-      agents: z.array(z.string()).default(['generic']),
-      repositories: z.array(z.string()).default(['*']),
-      paths: z.array(z.string()).default(['**'])
-    }).default({ agents: ['generic'], repositories: ['*'], paths: ['**'] }),
-    rules: z.array(ruleSchema).default([])
-  })
+  name: z.string().min(1),
+  version: z.string().optional(),
+  appliesTo: z.object({
+    agents: z.array(z.string()).default(['generic']),
+    repositories: z.array(z.string()).default(['*']),
+    paths: z.array(z.string()).default(['**'])
+  }).default({ agents: ['generic'], repositories: ['*'], paths: ['**'] }),
+  rules: z.array(ruleSchema).default([])
 })
 
 export interface PolicySet {
@@ -58,7 +53,7 @@ export interface PolicySet {
   sourceId: string
 }
 
-/** source의 policiesDir에서 `kind: PolicySet` YAML들을 로드한다. rule id는 source 내 전역 유일해야 한다 */
+/** source의 policiesDir에서 PolicySet YAML들을 로드한다. rule id는 source 내 전역 유일해야 한다 */
 export function loadPolicySets(source: RutterSource): PolicySet[] {
   const dirRel = source.manifest.policiesDir
   if (!dirRel) return []
@@ -78,14 +73,14 @@ export function loadPolicySets(source: RutterSource): PolicySet[] {
       throw new PilotError(`${file}: ${issue?.path.join('.') || '(root)'}: ${issue?.message}`)
     }
     const d = parsed.data
-    for (const rule of d.spec.rules) {
+    for (const rule of d.rules) {
       const prev = seenIds.get(rule.id)
       if (prev) throw new PilotError(`rule id '${rule.id}' 중복: ${prev}과 ${name}`, 'rule id는 패키지 내에서 유일해야 합니다')
       seenIds.set(rule.id, name)
     }
     sets.push({
-      name: d.metadata.name, version: d.metadata.version,
-      appliesTo: d.spec.appliesTo, rules: d.spec.rules, sourceId: source.id
+      name: d.name, version: d.version,
+      appliesTo: d.appliesTo, rules: d.rules, sourceId: source.id
     })
   }
   return sets

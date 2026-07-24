@@ -9,7 +9,7 @@ import { sourceCacheDir } from '../src/core/paths.js'
 function makeRutterRepo(priority?: number): string {
   const work = mkdtempSync(join(tmpdir(), 'pilot-rutter-'))
   const priorityLine = priority === undefined ? '' : `priority: ${priority}\n`
-  writeFileSync(join(work, 'rutter.yaml'), `version: 1\nname: Test Handbook\nscope: organization\n${priorityLine}`)
+  writeFileSync(join(work, 'rutter.yaml'), `name: Test Handbook\nscope: organization\n${priorityLine}`)
   execFileSync('git', ['init', '-b', 'main'], { cwd: work })
   execFileSync('git', ['add', '-A'], { cwd: work })
   execFileSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-m', 'init'], { cwd: work })

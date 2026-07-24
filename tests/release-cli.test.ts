@@ -97,11 +97,8 @@ describe('pilot release', () => {
 
   it('library 패키지는 install 거부', () => {
     const lib = mkdtempSync(join(tmpdir(), 'lib-'))
-    writeFileSync(join(lib, 'rutter.yaml'), [
-      'apiVersion: rutter.followingseas.dev/v1', 'kind: Package',
-      'metadata:', '  name: lib', '  version: 1.0.0',
-      'package:', '  type: library', '  scope: organization'
-    ].join('\n'))
+    writeFileSync(join(lib, 'rutter.yaml'),
+      'name: lib\nversion: "1.0.0"\nscope: organization\ntype: library\n')
     const p2 = mkdtempSync(join(tmpdir(), 'proj-'))
     execFileSync('git', ['init', '-b', 'main'], { cwd: p2 })
     env.XDG_CONFIG_HOME = mkdtempSync(join(tmpdir(), 'cfg2-'))
@@ -173,11 +170,9 @@ describe('pilot release', () => {
     const dep = join(pkgDir, 'vendor', 'shared-git')
     mkdirSync(join(dep, 'docs'), { recursive: true })
     writeFileSync(join(dep, 'rutter.yaml'), [
-      'apiVersion: rutter.followingseas.dev/v1', 'kind: Package',
-      'metadata:', '  name: shared-git', '  version: 1.4.2',
-      'package:', '  type: library', '  scope: organization',
-      'sources:', '  docs:', '    conventions: docs',
-      'values:', '  defaultsFile: defaults.yaml'
+      'name: shared-git', 'version: "1.4.2"', 'scope: organization', 'type: library',
+      'docs:', '  conventions: docs',
+      'defaults: defaults.yaml'
     ].join('\n'))
     writeFileSync(join(dep, 'defaults.yaml'), 'git:\n  flow: github-flow\n')
     writeFileSync(join(dep, 'docs', 'git.md'), '# DEP git 규칙\n')
