@@ -1,3 +1,5 @@
+import { mkdirSync, existsSync, statSync, rmSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { detectProject } from './git.js'
 import { resolveRelease, type ResolvedRelease } from './engine.js'
 import { applyArtifacts, removeStaleArtifacts, type RenderedArtifact } from './adapters.js'
@@ -78,30 +80,56 @@ function guardLockedFields(resolved: ResolvedRelease, prev: PilotRelease, approv
   }
 }
 
+const APPLY_LOCK_STALE_MS = 60_000
+
+// read-revision → commit 사이를 프로젝트 스코프로 직렬화한다 — 동시 apply 두 개가 같은 revision을
+// 읽어 서로의 산출물·lock·release를 뒤섞는 것을 막는다(best-effort, 단일 머신 기준)
+function acquireApplyLock(projectRoot: string): string {
+  const pilotDir = join(projectRoot, '.pilot')
+  mkdirSync(pilotDir, { recursive: true })
+  const lock = join(pilotDir, 'apply.lock')
+  if (existsSync(lock)) {
+    if (Date.now() - statSync(lock).mtimeMs < APPLY_LOCK_STALE_MS) {
+      throw new PilotError('다른 apply가 진행 중입니다',
+        '완료를 기다리거나, 중단된 apply라면 .pilot/apply.lock 을 삭제하세요')
+    }
+    rmSync(lock, { force: true }) // 오래된 락은 회수
+  }
+  try { writeFileSync(lock, String(process.pid), { flag: 'wx' }) }
+  catch { throw new PilotError('다른 apply가 방금 시작되었습니다 — 잠시 후 다시 시도하세요') }
+  return lock
+}
+
 /**
  * 릴리스를 프로젝트에 적용한다 — install이든 upgrade든 멱등하게 revision을 증가시킨다.
  * 이전 release가 있으면 locked-field 게이트를 거친다. pilot apply와 pilot init이 공유한다.
+ * read-revision부터 commit까지 apply.lock으로 직렬화한다.
  */
 export function applyRelease(cwd: string, opts: ApplyOptions): ApplyResult {
   const detected = detectProject(cwd)
   if (!detected) throw new PilotError('git 프로젝트가 아닙니다', 'git repo 루트에서 실행하세요')
-  const prev = readRelease(detected.root)
-  const revision = (prev?.metadata.revision ?? 0) + 1
-
-  const resolved = resolveRelease(cwd, {
-    valuesFiles: opts.valuesFiles, set: opts.set, revision, releaseName: prev?.metadata.name
-  })
-  if (prev) guardLockedFields(resolved, prev, opts.approveLockedFieldChange ?? false)
-
-  const release = buildReleaseState(revision, prev?.metadata.revision ?? null, resolved)
+  const lock = acquireApplyLock(detected.root)
   try {
-    const { written, removed } = commitRelease(
-      resolved.projectRoot, release, resolved.artifacts, resolved.values, resolved.lock,
-      prev ? prev.artifacts.map(a => a.path) : null)
-    return { release, written, removed, warnings: resolved.warnings, revision, created: !prev }
-  } catch (e) {
-    throw new PilotError(
-      `적용 중 실패 — 프로젝트 파일이 부분적으로 갱신되었을 수 있습니다: ${(e as Error).message}`,
-      '원인 해결 후 pilot apply 를 다시 실행하면 상태가 복구됩니다')
+    const prev = readRelease(detected.root)
+    const revision = (prev?.metadata.revision ?? 0) + 1
+
+    const resolved = resolveRelease(cwd, {
+      valuesFiles: opts.valuesFiles, set: opts.set, revision, releaseName: prev?.metadata.name
+    })
+    if (prev) guardLockedFields(resolved, prev, opts.approveLockedFieldChange ?? false)
+
+    const release = buildReleaseState(revision, prev?.metadata.revision ?? null, resolved)
+    try {
+      const { written, removed } = commitRelease(
+        resolved.projectRoot, release, resolved.artifacts, resolved.values, resolved.lock,
+        prev ? prev.artifacts.map(a => a.path) : null)
+      return { release, written, removed, warnings: resolved.warnings, revision, created: !prev }
+    } catch (e) {
+      throw new PilotError(
+        `적용 중 실패 — 프로젝트 파일이 부분적으로 갱신되었을 수 있습니다: ${(e as Error).message}`,
+        '원인 해결 후 pilot apply 를 다시 실행하면 상태가 복구됩니다')
+    }
+  } finally {
+    rmSync(lock, { force: true })
   }
 }

@@ -121,7 +121,7 @@ adapters:                         # 렌더 대상 (생략 시 claude·codex 활�
 
 dependencies:                     # 다른 rutter를 상속 (1단계, api형 전이)
   - name: shared-git
-    version: ^1.4.0
+    version: 1.4.0                 # 정확한 버전 (semver range 해석은 아직 미지원 — 불일치 시 경고만)
     repository: https://github.com/acme/rutter-git
 
 repositories:                     # git remote로 프로젝트를 식별해 매칭

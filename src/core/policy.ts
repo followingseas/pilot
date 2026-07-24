@@ -33,8 +33,9 @@ const ruleSchema = z.object({
 export type PolicyRule = z.infer<typeof ruleSchema>
 
 // 평면 PolicySet — 매니페스트와 같은 스타일. policies/ 디렉터리가 이미 종류를 알려주므로
-// apiVersion·kind 없이 name/appliesTo/rules를 최상위에 둔다
-const policySetSchema = z.looseObject({
+// apiVersion·kind 없이 name/appliesTo/rules를 최상위에 둔다.
+// strictObject: 오타(appliesToo, rulse 등)가 조용히 기본값으로 떨어져 정책을 바꾸지 않도록 fail-closed
+const policySetSchema = z.strictObject({
   name: z.string().min(1),
   version: z.string().optional(),
   appliesTo: z.object({

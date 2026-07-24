@@ -185,6 +185,12 @@ describe('pilot apply', () => {
     expect(historyValues.values.git.flow).toBe('github-flow')
   })
 
+  it('apply.lock이 있으면 동시 실행을 거부한다', () => {
+    mkdirSync(join(proj, '.pilot'), { recursive: true })
+    writeFileSync(join(proj, '.pilot', 'apply.lock'), '99999')
+    expect(runFail(['apply'], proj)).toContain('진행 중')
+  })
+
   it('dependency: 패키지 루트 밖 로컬 경로는 거부된다', () => {
     const manifest = readFileSync(join(pkgDir, 'rutter.yaml'), 'utf8')
     writeFileSync(join(pkgDir, 'rutter.yaml'),
