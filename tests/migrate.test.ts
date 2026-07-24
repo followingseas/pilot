@@ -30,7 +30,7 @@ describe('planMigration', () => {
   it('v2 패키지면 에러', () => {
     const dir = mkdtempSync(join(tmpdir(), 'pilot-mig-'))
     writeFileSync(join(dir, 'rutter.yaml'), [
-      'apiVersion: rutter.followingseas.dev/v2alpha1', 'kind: Package',
+      'apiVersion: rutter.followingseas.dev/v1', 'kind: Package',
       'metadata:', '  name: x', '  version: 1.0.0', 'package:', '  scope: organization'
     ].join('\n'))
     expect(() => planMigration(dir)).toThrow(/이미 v2/)

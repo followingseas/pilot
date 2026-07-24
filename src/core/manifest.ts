@@ -7,7 +7,7 @@ import { ManifestError } from './errors.js'
 export const SCOPES = ['organization', 'repository', 'project-local', 'personal'] as const
 export type Scope = (typeof SCOPES)[number]
 
-export const V2_API_VERSION = 'rutter.followingseas.dev/v2alpha1'
+export const API_VERSION = 'rutter.followingseas.dev/v1'
 
 export interface RepoEntry { id: string; remote: string }
 export interface AdapterOut { enabled: boolean; output: string; mode?: string }
@@ -61,7 +61,7 @@ const adapterOutSchema = z.object({
 }).optional()
 
 const v2Schema = z.looseObject({
-  apiVersion: z.literal(V2_API_VERSION),
+  apiVersion: z.literal(API_VERSION),
   kind: z.literal('Package'),
   metadata: z.object({
     name: z.string().min(1),

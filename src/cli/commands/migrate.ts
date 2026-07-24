@@ -2,7 +2,7 @@ import { existsSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { stringify } from 'yaml'
 import type { Command } from 'commander'
-import { parseManifest, V2_API_VERSION, type RutterManifest } from '../../core/manifest.js'
+import { parseManifest, API_VERSION, type RutterManifest } from '../../core/manifest.js'
 import { PilotError } from '../../core/errors.js'
 
 interface PlannedFile { path: string; content: string; overwrite: boolean }
@@ -13,7 +13,7 @@ export function planMigration(dir: string): PlannedFile[] {
   if (m.formatVersion !== 1) throw new PilotError('이미 v2 패키지입니다', '마이그레이션이 필요 없습니다')
 
   const manifest = {
-    apiVersion: V2_API_VERSION,
+    apiVersion: API_VERSION,
     kind: 'Package',
     metadata: { name: m.name, version: '2.0.0' },
     package: { type: 'application', scope: m.scope },
@@ -33,7 +33,7 @@ export function planMigration(dir: string): PlannedFile[] {
   }
 
   const legacyPolicy = {
-    apiVersion: V2_API_VERSION,
+    apiVersion: API_VERSION,
     kind: 'PolicySet',
     metadata: { name: 'legacy-import', version: '0.1.0' },
     spec: {

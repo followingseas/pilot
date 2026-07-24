@@ -12,7 +12,7 @@ const asSource = (rootDir: string): RutterSource => ({
   id: 'test', kind: 'local', rootDir, manifest: parseManifest(rootDir), priority: 0
 })
 
-const V2_HEAD = 'apiVersion: rutter.followingseas.dev/v2alpha1\nkind: Package\nmetadata:\n  name: x\n  version: 1.0.0\npackage:\n  scope: organization\nsources:\n  policies:\n    dir: policies\n'
+const V2_HEAD = 'apiVersion: rutter.followingseas.dev/v1\nkind: Package\nmetadata:\n  name: x\n  version: 1.0.0\npackage:\n  scope: organization\nsources:\n  policies:\n    dir: policies\n'
 
 describe('loadPolicySets', () => {
   it('픽스처의 PolicySet을 파싱한다', () => {
@@ -33,7 +33,7 @@ describe('loadPolicySets', () => {
     writeFileSync(join(dir, 'rutter.yaml'), V2_HEAD)
     mkdirSync(join(dir, 'policies'))
     writeFileSync(join(dir, 'policies', 'bad.yaml'),
-      'apiVersion: rutter.followingseas.dev/v2alpha1\nkind: PolicySet\nmetadata:\n  name: bad\nspec:\n  rules:\n    - id: a\n      statement: s\n')
+      'apiVersion: rutter.followingseas.dev/v1\nkind: PolicySet\nmetadata:\n  name: bad\nspec:\n  rules:\n    - id: a\n      statement: s\n')
     expect(() => loadPolicySets(asSource(dir))).toThrow(/level/)
   })
   it('rule id가 중복이면 실패한다', () => {
@@ -41,7 +41,7 @@ describe('loadPolicySets', () => {
     writeFileSync(join(dir, 'rutter.yaml'), V2_HEAD)
     mkdirSync(join(dir, 'policies'))
     const set = (name: string) =>
-      `apiVersion: rutter.followingseas.dev/v2alpha1\nkind: PolicySet\nmetadata:\n  name: ${name}\nspec:\n  rules:\n    - id: dup.rule\n      level: warn\n      statement: s\n`
+      `apiVersion: rutter.followingseas.dev/v1\nkind: PolicySet\nmetadata:\n  name: ${name}\nspec:\n  rules:\n    - id: dup.rule\n      level: warn\n      statement: s\n`
     writeFileSync(join(dir, 'policies', 'a.yaml'), set('a'))
     writeFileSync(join(dir, 'policies', 'b.yaml'), set('b'))
     expect(() => loadPolicySets(asSource(dir))).toThrow(/중복/)
@@ -59,7 +59,7 @@ describe('rulesForAgent', () => {
     writeFileSync(join(dir, 'rutter.yaml'), V2_HEAD)
     mkdirSync(join(dir, 'policies'))
     writeFileSync(join(dir, 'policies', 'claude-only.yaml'),
-      'apiVersion: rutter.followingseas.dev/v2alpha1\nkind: PolicySet\nmetadata:\n  name: c\nspec:\n  appliesTo:\n    agents: [claude]\n  rules:\n    - id: c.rule\n      level: info\n      statement: s\n')
+      'apiVersion: rutter.followingseas.dev/v1\nkind: PolicySet\nmetadata:\n  name: c\nspec:\n  appliesTo:\n    agents: [claude]\n  rules:\n    - id: c.rule\n      level: info\n      statement: s\n')
     const sets = loadPolicySets(asSource(dir))
     expect(rulesForAgent(sets, 'claude')).toHaveLength(1)
     expect(rulesForAgent(sets, 'codex')).toHaveLength(0)

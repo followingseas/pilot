@@ -34,7 +34,7 @@ describe('computeSourceDigest', () => {
     const dir = copyFixture()
     const before = computeSourceDigest(localSource(dir))
     writeFileSync(join(dir, 'policies', 'extra.yaml'),
-      'apiVersion: rutter.followingseas.dev/v2alpha1\nkind: PolicySet\nmetadata:\n  name: e\nspec:\n  rules: []\n')
+      'apiVersion: rutter.followingseas.dev/v1\nkind: PolicySet\nmetadata:\n  name: e\nspec:\n  rules: []\n')
     expect(computeSourceDigest(localSource(dir))).not.toBe(before)
   })
   it('git source는 캐시 HEAD sha를 쓴다', () => {

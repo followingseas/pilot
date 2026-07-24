@@ -1,4 +1,4 @@
-apiVersion: rutter.followingseas.dev/v2alpha1
+apiVersion: rutter.followingseas.dev/v1
 kind: Package
 
 metadata:

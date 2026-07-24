@@ -2,12 +2,12 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 
 import { join } from 'node:path'
 import { parse, stringify } from 'yaml'
 import { z } from 'zod'
-import { V2_API_VERSION } from './manifest.js'
+import { API_VERSION } from './manifest.js'
 import { PilotError } from './errors.js'
 import type { RenderedArtifact } from './adapters.js'
 
 const releaseSchema = z.object({
-  apiVersion: z.literal(V2_API_VERSION),
+  apiVersion: z.literal(API_VERSION),
   kind: z.literal('Release'),
   metadata: z.object({
     name: z.string(),
