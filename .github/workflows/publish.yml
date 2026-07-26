@@ -15,10 +15,15 @@ jobs:
     runs-on: ubuntu-latest # Trusted Publishing은 GitHub-hosted 러너만 지원
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false # 배포에 repo 자격증명이 필요 없다 — git config에 남기지 않는다
       - uses: actions/setup-node@v4
         with:
           node-version: 24 # OIDC 요구: node 22.14+ / npm 11.5.1+
           registry-url: https://registry.npmjs.org
+      # setup-node가 .npmrc에 남기는 _authToken placeholder가 OIDC 인증과 충돌할 수 있어
+      # npm을 최신으로 올려 Trusted Publishing 경로를 확실히 쓰게 한다
+      - run: npm install -g npm@latest
       - run: npm ci
       - run: npm test
       - run: npm publish
