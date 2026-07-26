@@ -4,7 +4,7 @@
   "description": "Pilot connects your rutter — org knowledge bundles — to AI coding agents via CLI and MCP.",
   "type": "module",
   "bin": {
-    "pilot": "./dist/cli/index.js"
+    "pilot": "dist/cli/index.js"
   },
   "files": [
     "dist"
