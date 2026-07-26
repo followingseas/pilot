@@ -22,8 +22,9 @@ jobs:
           node-version: 24 # OIDC 요구: node 22.14+ / npm 11.5.1+
           registry-url: https://registry.npmjs.org
       # setup-node가 .npmrc에 남기는 _authToken placeholder가 OIDC 인증과 충돌할 수 있어
-      # npm을 최신으로 올려 Trusted Publishing 경로를 확실히 쓰게 한다
-      - run: npm install -g npm@latest
+      # Trusted Publishing을 지원하는 npm으로 고정한다(11.5.1+). id-token 권한이 있는 job이므로
+      # 가변 태그(@latest) 대신 버전을 핀하고 설치 스크립트도 실행하지 않는다
+      - run: npm install -g --ignore-scripts npm@11.8.0
       - run: npm ci
       - run: npm test
       - run: npm publish
