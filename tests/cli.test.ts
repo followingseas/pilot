@@ -4,7 +4,8 @@ import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const CLI = ['npx', 'tsx', 'src/cli/index.ts']
+// npx 경유가 아니라 로컬 tsx 바이너리를 직접 실행한다 (e2e.test.ts 와 같은 이유)
+const CLI = [join(process.cwd(), 'node_modules', '.bin', 'tsx'), 'src/cli/index.ts']
 let env: NodeJS.ProcessEnv
 
 function run(args: string[], cwd?: string): string {

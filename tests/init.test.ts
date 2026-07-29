@@ -5,8 +5,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 let env: NodeJS.ProcessEnv
+// npx 경유가 아니라 로컬 tsx 바이너리를 직접 실행한다 (e2e.test.ts 와 같은 이유)
+const TSX = join(process.cwd(), 'node_modules', '.bin', 'tsx')
 const run = (args: string[], cwd: string) =>
-  execFileSync('npx', ['tsx', join(process.cwd(), 'src/cli/index.ts'), ...args], { encoding: 'utf8', env, cwd })
+  execFileSync(TSX, [join(process.cwd(), 'src/cli/index.ts'), ...args], { encoding: 'utf8', env, cwd })
 
 function makeRutter(): string {
   const r = mkdtempSync(join(tmpdir(), 'rutter-'))
@@ -52,7 +54,7 @@ describe('pilot init', () => {
     // 않았다"는 보안 불변식(성공 로그 없음 + CLAUDE.md 없음 + config 비어있음)만 검증한다.
     let stdout = ''
     try {
-      stdout = execFileSync('npx', ['tsx', join(process.cwd(), 'src/cli/index.ts'), 'init'],
+      stdout = execFileSync(TSX, [join(process.cwd(), 'src/cli/index.ts'), 'init'],
         { encoding: 'utf8', env, cwd: proj, input: 'n\n' })
     } catch {
       // 실패 자체가 기대되는 경로 — 아래 불변식만 확인한다
