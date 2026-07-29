@@ -5,8 +5,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 let env: NodeJS.ProcessEnv
+// npx 경유가 아니라 로컬 tsx 바이너리를 직접 실행한다 — 테스트 cwd 가 임시 디렉토리라
+// npx 는 리포의 node_modules 를 보지 못하고 매번 네트워크에서 tsx 를 받아온다(CI 타임아웃 원인).
+const TSX = join(process.cwd(), 'node_modules', '.bin', 'tsx')
 const run = (args: string[], cwd: string) =>
-  execFileSync('npx', ['tsx', join(process.cwd(), 'src/cli/index.ts'), ...args], { encoding: 'utf8', env, cwd })
+  execFileSync(TSX, [join(process.cwd(), 'src/cli/index.ts'), ...args], { encoding: 'utf8', env, cwd })
 
 beforeEach(() => {
   env = { ...process.env,

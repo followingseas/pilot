@@ -7,13 +7,15 @@ import { parse } from 'yaml'
 
 const FIXTURE_PKG = new URL('./fixtures/rutter-v2', import.meta.url).pathname
 const CLI = join(process.cwd(), 'src/cli/index.ts')
+// npx 경유가 아니라 로컬 tsx 바이너리를 직접 실행한다 (e2e.test.ts 와 같은 이유)
+const TSX = join(process.cwd(), 'node_modules', '.bin', 'tsx')
 
 let env: NodeJS.ProcessEnv
 const run = (args: string[], cwd: string) =>
-  execFileSync('npx', ['tsx', CLI, ...args], { encoding: 'utf8', env, cwd })
+  execFileSync(TSX, [CLI, ...args], { encoding: 'utf8', env, cwd })
 // stdout+stderr 함께 캡처 (경고는 stderr로 나간다)
 const runOut = (args: string[], cwd: string): string => {
-  const r = spawnSync('npx', ['tsx', CLI, ...args], { encoding: 'utf8', env, cwd })
+  const r = spawnSync(TSX, [CLI, ...args], { encoding: 'utf8', env, cwd })
   return (r.stdout ?? '') + (r.stderr ?? '')
 }
 const runFail = (args: string[], cwd: string): string => {
