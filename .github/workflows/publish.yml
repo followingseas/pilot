@@ -19,7 +19,7 @@ jobs:
           persist-credentials: false # 배포에 repo 자격증명이 필요 없다 — git config에 남기지 않는다
       - uses: actions/setup-node@v4
         with:
-          node-version: 24 # OIDC 요구: node 22.14+ / npm 11.5.1+
+          node-version: 24 # OIDC 요구: node 22.14+ / npm 11.5.1+ — 올리면 test.yml 매트릭스에도 반영
           registry-url: https://registry.npmjs.org
       # setup-node가 .npmrc에 남기는 _authToken placeholder가 OIDC 인증과 충돌할 수 있어
       # Trusted Publishing을 지원하는 npm으로 고정한다(11.5.1+). id-token 권한이 있는 job이므로

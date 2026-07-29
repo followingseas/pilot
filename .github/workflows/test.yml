@@ -1,0 +1,33 @@
+name: test
+# PR 시점에 테스트를 돌린다. npm test 가 릴리스 워크플로(publish.yml)에서만 돌면
+# 깨진 테스트가 배포 시점에야 발견된다 — PR 검증이 commitlint 뿐인 공백을 메운다.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  push:
+    branches: [main] # 각각 green 인 PR 들이 병합되며 생기는 의미 충돌을 잡는다
+
+permissions:
+  contents: read
+
+# 같은 브랜치에 연속 푸시하면 이전 실행을 취소한다
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 24] # engines 하한(>=20)과 publish.yml 이 배포에 쓰는 24 양쪽에서 검증한다
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      # vitest(esbuild)·tsup 어느 쪽도 타입 검사를 하지 않아 여기서만 돈다
+      - run: npm run typecheck
+      - run: npm test
